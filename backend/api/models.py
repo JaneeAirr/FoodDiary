@@ -133,3 +133,39 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.title}"
 
+
+class MealReminderSettings(models.Model):
+    """User settings for meal reminders"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_reminder_settings')
+    
+    # Enable/disable reminders
+    reminders_enabled = models.BooleanField(default=True)
+    
+    # Meal times (stored as HH:MM format strings)
+    breakfast_time = models.TimeField(null=True, blank=True, default='08:00')
+    lunch_time = models.TimeField(null=True, blank=True, default='13:00')
+    dinner_time = models.TimeField(null=True, blank=True, default='19:00')
+    snack_time = models.TimeField(null=True, blank=True, default='15:00')
+    
+    # Days of week when reminders are active (comma-separated: 0=Monday, 6=Sunday)
+    active_days = models.CharField(max_length=20, default='0,1,2,3,4,5,6', help_text="Comma-separated days (0=Monday, 6=Sunday)")
+    
+    # Notification preferences
+    browser_notifications = models.BooleanField(default=True)
+    sound_enabled = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Meal Reminder Settings"
+        verbose_name_plural = "Meal Reminder Settings"
+    
+    def __str__(self):
+        return f"{self.user.username}'s meal reminders"
+    
+    def get_active_days_list(self):
+        """Convert active_days string to list of integers"""
+        if not self.active_days:
+            return []
+        return [int(day.strip()) for day in self.active_days.split(',') if day.strip().isdigit()]

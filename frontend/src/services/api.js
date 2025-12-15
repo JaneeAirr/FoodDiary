@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use full URL in development, or relative URL if REACT_APP_API_URL is set
-// The setupProxy.js will handle proxying /api requests
+// Use full URL - backend server should be running on http://localhost:8000
+// If using proxy, you can set REACT_APP_API_URL='' to use relative URLs
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const api = axios.create({

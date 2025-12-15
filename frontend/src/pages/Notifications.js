@@ -102,18 +102,27 @@ const Notifications = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, width: '100%', maxWidth: '100%', mx: 'auto', overflow: 'hidden', px: { xs: 1, sm: 2 }, boxSizing: 'border-box' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon sx={{ fontSize: 32 }} />
           </Badge>
-          <Typography variant="h4" component="h1">
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.6rem', md: '2.125rem' } }}>
             Notifications
           </Typography>
         </Box>
         {unreadCount > 0 && (
-          <Button variant="outlined" onClick={markAllAsRead}>
+          <Button variant="outlined" onClick={markAllAsRead} sx={{ width: { xs: '100%', sm: 'auto' } }}>
             Mark All as Read
           </Button>
         )}

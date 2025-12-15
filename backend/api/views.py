@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import date, timedelta
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification
+from collections import defaultdict
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings
 from .serializers import (
     FoodSerializer, MealSerializer, NutritionGoalSerializer,
-    WeightEntrySerializer, NotificationSerializer
+    WeightEntrySerializer, NotificationSerializer, MealReminderSettingsSerializer
 )
 from .notification_service import check_and_create_daily_notifications
 from .utils import (
@@ -92,14 +93,19 @@ def daily_summary(request):
         date_obj = date.today()
         date_param = str(date_obj)
     
-    meals = Meal.objects.filter(user=request.user, date=date_obj)
+    meals = Meal.objects.filter(user=request.user, date=date_obj).select_related('food')
     
-    totals = meals.aggregate(
-        total_calories=Sum('total_calories'),
-        total_protein=Sum('total_protein'),
-        total_carbs=Sum('total_carbs'),
-        total_fat=Sum('total_fat'),
-    )
+    # Calculate totals manually since total_calories, total_protein, etc. are properties, not DB fields
+    total_calories = 0.0
+    total_protein = 0.0
+    total_carbs = 0.0
+    total_fat = 0.0
+    
+    for meal in meals:
+        total_calories += meal.total_calories
+        total_protein += meal.total_protein
+        total_carbs += meal.total_carbs
+        total_fat += meal.total_fat
     
     # Get user's goals
     try:
@@ -113,14 +119,14 @@ def daily_summary(request):
     except NutritionGoal.DoesNotExist:
         goal_data = None
     
-    # Ensure totals are floats, not None
+    # Ensure totals are floats
     return Response({
         'date': date_param,
         'totals': {
-            'calories': float(totals['total_calories'] or 0),
-            'protein': float(totals['total_protein'] or 0),
-            'carbs': float(totals['total_carbs'] or 0),
-            'fat': float(totals['total_fat'] or 0),
+            'calories': float(total_calories),
+            'protein': float(total_protein),
+            'carbs': float(total_carbs),
+            'fat': float(total_fat),
         },
         'goals': goal_data,
         'meals': MealSerializer(meals, many=True).data,
@@ -135,17 +141,39 @@ def statistics(request):
     end_date = date.today()
     start_date = end_date - timedelta(days=days-1)
     
-    # Get nutrition statistics
+    # Get nutrition statistics - need to calculate manually since total_calories, etc. are properties
     meals = Meal.objects.filter(
         user=request.user,
         date__gte=start_date,
         date__lte=end_date
-    ).values('date').annotate(
-        total_calories=Sum('total_calories'),
-        total_protein=Sum('total_protein'),
-        total_carbs=Sum('total_carbs'),
-        total_fat=Sum('total_fat'),
-    ).order_by('date')
+    ).select_related('food').order_by('date')
+    
+    # Group by date and calculate totals manually
+    daily_totals = defaultdict(lambda: {
+        'total_calories': 0.0,
+        'total_protein': 0.0,
+        'total_carbs': 0.0,
+        'total_fat': 0.0
+    })
+    
+    for meal in meals:
+        day_key = str(meal.date)
+        daily_totals[day_key]['total_calories'] += meal.total_calories
+        daily_totals[day_key]['total_protein'] += meal.total_protein
+        daily_totals[day_key]['total_carbs'] += meal.total_carbs
+        daily_totals[day_key]['total_fat'] += meal.total_fat
+    
+    # Convert to list format
+    nutrition_data = [
+        {
+            'date': day_date,
+            'total_calories': float(totals['total_calories']),
+            'total_protein': float(totals['total_protein']),
+            'total_carbs': float(totals['total_carbs']),
+            'total_fat': float(totals['total_fat']),
+        }
+        for day_date, totals in sorted(daily_totals.items())
+    ]
     
     # Get weight entries
     weight_entries = WeightEntry.objects.filter(
@@ -155,7 +183,6 @@ def statistics(request):
     ).order_by('date')
     
     # Convert to dictionaries for easier frontend consumption
-    nutrition_data = list(meals)
     weight_data = [
         {
             'date': str(entry.date),
@@ -279,6 +306,46 @@ class NotificationViewSet(viewsets.ModelViewSet):
         """Get count of unread notifications"""
         count = Notification.objects.filter(user=request.user, is_read=False).count()
         return Response({'count': count})
+
+
+class MealReminderSettingsViewSet(viewsets.ModelViewSet):
+    """ViewSet for meal reminder settings"""
+    serializer_class = MealReminderSettingsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return MealReminderSettings.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get', 'put', 'patch'])
+    def my_settings(self, request):
+        """Get or update current user's reminder settings"""
+        settings_obj, created = MealReminderSettings.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'reminders_enabled': True,
+                'breakfast_time': '08:00',
+                'lunch_time': '13:00',
+                'dinner_time': '19:00',
+                'snack_time': '15:00',
+                'active_days': '0,1,2,3,4,5,6',
+                'browser_notifications': True,
+                'sound_enabled': False,
+            }
+        )
+        
+        if request.method == 'GET':
+            serializer = self.get_serializer(settings_obj)
+            return Response(serializer.data)
+        
+        elif request.method in ['PUT', 'PATCH']:
+            serializer = self.get_serializer(settings_obj, data=request.data, partial=request.method == 'PATCH')
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])

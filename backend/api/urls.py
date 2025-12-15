@@ -8,6 +8,7 @@ router.register(r'meals', views.MealViewSet, basename='meal')
 router.register(r'goals', views.NutritionGoalViewSet, basename='goal')
 router.register(r'weight', views.WeightEntryViewSet, basename='weight')
 router.register(r'notifications', views.NotificationViewSet, basename='notification')
+router.register(r'meal-reminders', views.MealReminderSettingsViewSet, basename='meal-reminder')
 
 urlpatterns = [
     path('', include(router.urls)),

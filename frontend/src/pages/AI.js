@@ -124,24 +124,38 @@ const AI = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, width: '100%', maxWidth: '100%', mx: 'auto', overflow: 'hidden', px: { xs: 1, sm: 2 }, boxSizing: 'border-box' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: { xs: 'flex-start', sm: 'center' },
+        }}
+      >
         <PsychologyIcon sx={{ fontSize: 40, color: '#ff6b35' }} />
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.6rem', md: '2.125rem' } }}>
           AI Nutrition Assistant
         </Typography>
       </Box>
 
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 3, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
         <Tabs
           value={tabValue}
           onChange={(e, newValue) => setTabValue(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             borderBottom: 1,
             borderColor: 'divider',
             mb: 3,
             '& .MuiTab-root': {
               color: 'rgba(255, 255, 255, 0.7)',
+              minWidth: { xs: 80, sm: 120 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
               '&.Mui-selected': {
                 color: '#ff6b35',
               },
@@ -151,10 +165,10 @@ const AI = () => {
             },
           }}
         >
-          <Tab icon={<PsychologyIcon />} label="Behavior Analysis" />
-          <Tab icon={<LightbulbIcon />} label="Recommendations" />
-          <Tab icon={<RestaurantMenuIcon />} label="Meal Plan" />
-          <Tab icon={<ChatIcon />} label="Chat with AI" />
+          <Tab icon={<PsychologyIcon />} iconPosition="start" label="Analysis" sx={{ minWidth: { xs: 60, sm: 100 } }} />
+          <Tab icon={<LightbulbIcon />} iconPosition="start" label="Tips" sx={{ minWidth: { xs: 60, sm: 100 } }} />
+          <Tab icon={<RestaurantMenuIcon />} iconPosition="start" label="Plan" sx={{ minWidth: { xs: 60, sm: 100 } }} />
+          <Tab icon={<ChatIcon />} iconPosition="start" label="Chat" sx={{ minWidth: { xs: 60, sm: 100 } }} />
         </Tabs>
 
         {error && (
@@ -164,7 +178,7 @@ const AI = () => {
         )}
 
         {tabValue === 0 && (
-          <Box>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
             <Typography variant="h6" gutterBottom>
               Analyze Your Eating Behavior
             </Typography>
@@ -197,15 +211,15 @@ const AI = () => {
                 )}
 
                 {analysis.patterns && analysis.patterns.length > 0 && (
-                  <Card sx={{ mb: 2 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
+                  <Card sx={{ mb: 2, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
                         Positive Patterns
                       </Typography>
                       <List>
                         {analysis.patterns.map((pattern, idx) => (
-                          <ListItem key={idx}>
-                            <ListItemText primary={pattern} />
+                          <ListItem key={idx} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <ListItemText primary={pattern} sx={{ wordBreak: 'break-word' }} />
                           </ListItem>
                         ))}
                       </List>
@@ -214,15 +228,15 @@ const AI = () => {
                 )}
 
                 {analysis.issues && analysis.issues.length > 0 && (
-                  <Card sx={{ mb: 2 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom color="error">
+                  <Card sx={{ mb: 2, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography variant="h6" gutterBottom color="error" sx={{ wordBreak: 'break-word' }}>
                         Issues Found
                       </Typography>
                       <List>
                         {analysis.issues.map((issue, idx) => (
-                          <ListItem key={idx}>
-                            <ListItemText primary={issue} />
+                          <ListItem key={idx} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <ListItemText primary={issue} sx={{ wordBreak: 'break-word' }} />
                           </ListItem>
                         ))}
                       </List>
@@ -231,15 +245,15 @@ const AI = () => {
                 )}
 
                 {analysis.recommendations && analysis.recommendations.length > 0 && (
-                  <Card>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom color="primary">
+                  <Card sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography variant="h6" gutterBottom color="primary" sx={{ wordBreak: 'break-word' }}>
                         Recommendations
                       </Typography>
                       <List>
                         {analysis.recommendations.map((rec, idx) => (
-                          <ListItem key={idx}>
-                            <ListItemText primary={rec} />
+                          <ListItem key={idx} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <ListItemText primary={rec} sx={{ wordBreak: 'break-word' }} />
                           </ListItem>
                         ))}
                       </List>
@@ -252,7 +266,7 @@ const AI = () => {
         )}
 
         {tabValue === 1 && (
-          <Box>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
             <Typography variant="h6" gutterBottom>
               Get Daily Recommendations
             </Typography>
@@ -273,15 +287,15 @@ const AI = () => {
             </Button>
 
             {recommendations.length > 0 && (
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
+              <Card sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
                     Today's Recommendations
                   </Typography>
                   <List>
                     {recommendations.map((rec, idx) => (
-                      <ListItem key={idx}>
-                        <Chip icon={<LightbulbIcon />} label={rec} color="primary" variant="outlined" />
+                      <ListItem key={idx} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                        <Chip icon={<LightbulbIcon />} label={rec} color="primary" variant="outlined" sx={{ maxWidth: '100%', wordBreak: 'break-word' }} />
                       </ListItem>
                     ))}
                   </List>
@@ -292,15 +306,15 @@ const AI = () => {
         )}
 
         {tabValue === 2 && (
-          <Box>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
             <Typography variant="h6" gutterBottom>
               Generate Personalized Meal Plan
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
               Получите детальный план питания на несколько дней с конкретными продуктами и количествами.
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center' }}>
-              <FormControl sx={{ minWidth: 120 }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, alignItems: 'center', flexWrap: 'wrap' }}>
+              <FormControl sx={{ minWidth: { xs: '100%', sm: 120 } }}>
                 <InputLabel>Days</InputLabel>
                 <Select
                   value={mealPlanDays}
@@ -319,6 +333,7 @@ const AI = () => {
                 sx={{
                   backgroundColor: '#ff6b35',
                   '&:hover': { backgroundColor: '#e55a2b' },
+                  width: { xs: '100%', sm: 'auto' },
                 }}
               >
                 {loading ? <CircularProgress size={24} /> : 'Generate Meal Plan'}
@@ -326,24 +341,24 @@ const AI = () => {
             </Box>
 
             {mealPlan && (
-              <Box>
+              <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
                 {mealPlan.days ? (
                   // Multi-day plan
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
                     {mealPlan.days.map((day, dayIdx) => (
-                      <Grid item xs={12} key={dayIdx}>
-                        <Card sx={{ mb: 2 }}>
-                          <CardContent>
+                      <Grid item xs={12} key={dayIdx} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                        <Card sx={{ mb: 2, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                          <CardContent sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
                             <Typography variant="h6" gutterBottom>
                               День {day.day_number || dayIdx + 1} {day.date && `(${day.date})`}
                             </Typography>
-                            <Grid container spacing={2}>
+                            <Grid container spacing={2} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
                               {['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
                                 const meal = day[mealType];
                                 if (!meal || !meal.foods || meal.foods.length === 0) return null;
                                 return (
-                                  <Grid item xs={12} sm={6} md={3} key={mealType}>
-                                    <Paper sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                                  <Grid item xs={12} sm={6} md={3} key={mealType} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                                    <Paper sx={{ p: 2, backgroundColor: 'rgba(255,255,255,0.05)', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                                       <Typography variant="subtitle1" sx={{ textTransform: 'capitalize', mb: 1, fontWeight: 'bold' }}>
                                         {mealType === 'breakfast' ? 'Завтрак' : mealType === 'lunch' ? 'Обед' : mealType === 'dinner' ? 'Ужин' : 'Перекусы'}
                                       </Typography>
@@ -368,11 +383,11 @@ const AI = () => {
                               })}
                             </Grid>
                             {day.day_total && (
-                              <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(255,107,53,0.1)', borderRadius: 1 }}>
+                              <Box sx={{ mt: 2, p: 2, backgroundColor: 'rgba(255,107,53,0.1)', borderRadius: 1, width: '100%', maxWidth: '100%', boxSizing: 'border-box', wordBreak: 'break-word' }}>
                                 <Typography variant="subtitle2" gutterBottom>
                                   Итого за день:
                                 </Typography>
-                                <Typography variant="body2">
+                                <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
                                   {day.day_total.calories || 0} ккал | Белки: {day.day_total.protein || 0}г | Углеводы: {day.day_total.carbs || 0}г | Жиры: {day.day_total.fat || 0}г
                                 </Typography>
                               </Box>
@@ -382,13 +397,13 @@ const AI = () => {
                       </Grid>
                     ))}
                     {mealPlan.summary && (
-                      <Grid item xs={12}>
-                        <Card>
-                          <CardContent>
-                            <Typography variant="h6" gutterBottom>
+                      <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                        <Card sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                          <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
                               Средние значения за период
                             </Typography>
-                            <Typography>
+                            <Typography sx={{ wordBreak: 'break-word' }}>
                               Калории: {mealPlan.summary.avg_daily_calories || 0} | Белки: {mealPlan.summary.avg_daily_protein || 0}г |
                               Углеводы: {mealPlan.summary.avg_daily_carbs || 0}г | Жиры: {mealPlan.summary.avg_daily_fat || 0}г
                             </Typography>
@@ -399,14 +414,14 @@ const AI = () => {
                   </Grid>
                 ) : (
                   // Single day plan (old format)
-                  <Grid container spacing={2}>
+                  <Grid container spacing={2} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
                     {['breakfast', 'lunch', 'dinner', 'snacks'].map((mealType) => {
                       const meal = mealPlan[mealType];
                       if (!meal) return null;
                       return (
-                        <Grid item xs={12} md={6} key={mealType}>
-                          <Card>
-                            <CardContent>
+                        <Grid item xs={12} md={6} key={mealType} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                          <Card sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                               <Typography variant="h6" sx={{ textTransform: 'capitalize' }} gutterBottom>
                                 {mealType}
                               </Typography>
@@ -456,17 +471,17 @@ const AI = () => {
         )}
 
         {tabValue === 3 && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
               Чат с AI-диетологом
             </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 3, wordBreak: 'break-word' }}>
               Задайте любой вопрос о питании, получите персональные советы и рекомендации. 
               ИИ знает ваш профиль и цели, поэтому даст точные ответы.
             </Typography>
 
-            <Paper sx={{ height: '500px', display: 'flex', flexDirection: 'column', mb: 2 }}>
-              <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+            <Paper sx={{ height: { xs: '400px', sm: '500px' }, display: 'flex', flexDirection: 'column', mb: 2, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+              <Box sx={{ flex: 1, overflow: 'auto', p: 2, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 {chatMessages.length === 0 ? (
                   <Box sx={{ textAlign: 'center', mt: 4 }}>
                     <Typography variant="body1" color="textSecondary">
@@ -500,11 +515,12 @@ const AI = () => {
                       >
                         <Box
                           sx={{
-                            maxWidth: '70%',
-                            p: 2,
+                            maxWidth: { xs: '85%', sm: '70%' },
+                            p: { xs: 1.5, sm: 2 },
                             borderRadius: 2,
                             backgroundColor: msg.role === 'user' ? '#ff6b35' : 'rgba(255,255,255,0.1)',
                             color: msg.role === 'user' ? '#fff' : 'inherit',
+                            wordBreak: 'break-word',
                           }}
                         >
                           <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>

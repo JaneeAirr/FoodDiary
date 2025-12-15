@@ -21,6 +21,7 @@ import ContactMailIcon from '@mui/icons-material/ContactMail';
 import MonitorWeightIcon from '@mui/icons-material/MonitorWeight';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PsychologyIcon from '@mui/icons-material/Psychology';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../store/AuthContext';
 
 const drawerWidth = 240;
@@ -38,28 +39,62 @@ const menuItems = [
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <Drawer
       variant="permanent"
       sx={{
+        // Прячем сайдбар на мобильных устройствах, показываем только на md+
+        display: { xs: 'none', md: 'block' },
         width: drawerWidth,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',
-          backgroundColor: '#1a1a1a',
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+          backgroundColor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          backgroundImage: 'none',
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" sx={{ color: '#ff6b35', fontWeight: 'bold' }}>
+      <Box 
+        sx={{ 
+          p: 3,
+          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            fontWeight: 700,
+            fontSize: '1.5rem',
+            letterSpacing: '-0.02em',
+          }}
+        >
           Food Diary
         </Typography>
         {user && (
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 0.5 }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'text.secondary', 
+              mt: 1,
+              fontWeight: 500,
+            }}
+          >
             {user.username}
           </Typography>
         )}
@@ -73,17 +108,25 @@ const Sidebar = () => {
               <ListItemButton
                 onClick={() => navigate(item.path)}
                 sx={{
-                  backgroundColor: isActive ? 'rgba(255, 107, 53, 0.1)' : 'transparent',
-                  borderLeft: isActive ? '3px solid #ff6b35' : '3px solid transparent',
+                  backgroundColor: isActive 
+                    ? 'linear-gradient(90deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%)'
+                    : 'transparent',
+                  borderLeft: isActive ? '4px solid' : '4px solid transparent',
+                  borderColor: isActive ? 'primary.main' : 'transparent',
+                  borderRadius: '0 12px 12px 0',
+                  mx: 1,
+                  mb: 0.5,
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 107, 53, 0.05)',
+                    backgroundColor: 'rgba(76, 175, 80, 0.08)',
+                    transform: 'translateX(4px)',
                   },
                   py: 1.5,
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 <ListItemIcon
                   sx={{
-                    color: isActive ? '#ff6b35' : 'rgba(255, 255, 255, 0.7)',
+                    color: isActive ? 'primary.main' : 'text.secondary',
                     minWidth: 40,
                   }}
                 >
@@ -93,8 +136,8 @@ const Sidebar = () => {
                   primary={item.text}
                   sx={{
                     '& .MuiListItemText-primary': {
-                      color: isActive ? '#ff6b35' : 'rgba(255, 255, 255, 0.9)',
-                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? 'primary.main' : 'text.primary',
+                      fontWeight: isActive ? 600 : 500,
                     },
                   }}
                 />
@@ -102,6 +145,42 @@ const Sidebar = () => {
             </ListItem>
           );
         })}
+      </List>
+      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+      <List sx={{ mt: 'auto', pb: 2 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{
+              borderRadius: '0 12px 12px 0',
+              mx: 1,
+              '&:hover': {
+                backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                transform: 'translateX(4px)',
+              },
+              py: 1.5,
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <ListItemIcon
+              sx={{
+                color: 'error.main',
+                minWidth: 40,
+              }}
+            >
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              sx={{
+                '& .MuiListItemText-primary': {
+                  color: 'error.main',
+                  fontWeight: 500,
+                },
+              }}
+            />
+          </ListItemButton>
+        </ListItem>
       </List>
     </Drawer>
   );

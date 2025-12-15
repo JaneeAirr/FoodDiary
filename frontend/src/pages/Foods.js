@@ -36,8 +36,8 @@ const Foods = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, width: '100%', maxWidth: '100%', mx: 'auto', overflow: 'hidden', px: { xs: 1, sm: 2 }, boxSizing: 'border-box' }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontSize: { xs: '1.6rem', md: '2.125rem' } }}>
         Food Database
       </Typography>
 
@@ -60,9 +60,9 @@ const Foods = () => {
       {loading ? (
         <Typography>Loading...</Typography>
       ) : (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ width: '100%', margin: 0 }}>
           {foods.map((food) => (
-            <Grid item xs={12} sm={6} md={4} key={food.id}>
+            <Grid item xs={12} sm={6} md={4} key={food.id} sx={{ width: '100%' }}>
               <Card>
                 <CardContent>
                   <Typography variant="h6">{food.name}</Typography>

@@ -23,11 +23,16 @@ import {
   InputLabel,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import api from '../services/api';
 import { useAuth } from '../store/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import MealReminderSettings from '../components/MealReminderSettings';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [profileData, setProfileData] = useState({
     display_name: user?.username || '',
@@ -136,11 +141,6 @@ const Profile = () => {
       const themePreference = profileData.theme_preference;
       localStorage.setItem('themePreference', themePreference);
       window.dispatchEvent(new CustomEvent('themeChanged', { detail: themePreference }));
-      
-      // Force page refresh to apply theme if needed
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
     } catch (error) {
       console.error('Profile save error:', error);
       setMessage('Failed to update profile');
@@ -186,47 +186,78 @@ const Profile = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <SettingsIcon sx={{ mr: 2, color: '#ff6b35', fontSize: 32 }} />
+    <Container maxWidth="lg" sx={{ py: 4, width: '100%', maxWidth: '100%', mx: 'auto', overflow: 'hidden', px: { xs: 1, sm: 2 }, boxSizing: 'border-box' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          mb: 3,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+        }}
+      >
+        <SettingsIcon sx={{ mr: { xs: 0, sm: 2 }, color: 'primary.main', fontSize: 32 }} />
         <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            sx={{ 
+              fontWeight: 700, 
+              fontSize: { xs: '1.75rem', md: '2.5rem' },
+              background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              mb: 1,
+            }}
+          >
             Settings & Goals
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body1" color="text.secondary">
             Manage your profile information, nutritional targets, and app preferences.
           </Typography>
         </Box>
       </Box>
 
-      <Paper sx={{ p: 3, backgroundColor: '#1e1e1e' }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
         <Tabs
           value={tabValue}
           onChange={(e, newValue) => setTabValue(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             borderBottom: 1,
             borderColor: 'divider',
             mb: 3,
             '& .MuiTab-root': {
-              color: 'rgba(255, 255, 255, 0.7)',
+              color: 'text.secondary',
+              minWidth: { xs: 80, sm: 120 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              fontWeight: 500,
               '&.Mui-selected': {
-                color: '#ff6b35',
+                color: 'primary.main',
+                fontWeight: 600,
               },
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#ff6b35',
+              backgroundColor: 'primary.main',
+              height: 3,
+              borderRadius: '3px 3px 0 0',
             },
           }}
         >
-          <Tab label="Profile" />
-          <Tab label="Nutrition Goals" />
-          <Tab label="Calculations" />
+          <Tab label="Profile" icon={<SettingsIcon />} iconPosition="start" />
+          <Tab label="Goals" iconPosition="start" />
+          <Tab label="Calculations" iconPosition="start" />
+          <Tab label="Reminders" icon={<NotificationsIcon />} iconPosition="start" />
+          <Tab label="Account" icon={<LogoutIcon />} iconPosition="start" />
         </Tabs>
 
         {message && (
           <Alert
             severity={message.includes('success') ? 'success' : 'error'}
-            sx={{ mb: 3 }}
+            sx={{ mb: 3, width: '100%', maxWidth: '100%', boxSizing: 'border-box', wordBreak: 'break-word' }}
             onClose={() => setMessage('')}
           >
             {message}
@@ -234,15 +265,25 @@ const Profile = () => {
         )}
 
         {tabValue === 0 && (
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 4,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: 2,
+              }}
+            >
               <Avatar
                 sx={{
-                  width: 80,
-                  height: 80,
-                  bgcolor: '#ff6b35',
-                  mr: 3,
-                  fontSize: 32,
+                  width: 100,
+                  height: 100,
+                  background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+                  mr: { xs: 0, sm: 3 },
+                  fontSize: 40,
+                  fontWeight: 700,
+                  boxShadow: '0 4px 20px rgba(76, 175, 80, 0.3)',
                 }}
               >
                 {profileData.display_name.charAt(0).toUpperCase()}
@@ -255,13 +296,13 @@ const Profile = () => {
             <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
               Основная информация для расчета БЖУ
             </Typography>
-            <Alert severity="info" sx={{ mb: 3 }}>
+            <Alert severity="info" sx={{ mb: 3, width: '100%', maxWidth: '100%', boxSizing: 'border-box', wordBreak: 'break-word' }}>
               Заполните эти данные для автоматического расчета ваших целей по калориям и БЖУ. 
               Все расчеты выполняются на сервере по формуле Харриса-Бенедикта.
             </Alert>
 
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6}>
+            <Grid container spacing={3} sx={{ mb: 3, width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <TextField
                   fullWidth
                   label="Рост (см)"
@@ -270,9 +311,10 @@ const Profile = () => {
                   onChange={(e) => handleProfileChange('height', e.target.value)}
                   inputProps={{ min: 100, max: 250, step: 0.1 }}
                   helperText="Ваш рост в сантиметрах"
+                  sx={{ width: '100%', maxWidth: '100%' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <TextField
                   fullWidth
                   label="Вес (кг)"
@@ -281,10 +323,11 @@ const Profile = () => {
                   onChange={(e) => handleProfileChange('weight', e.target.value)}
                   inputProps={{ min: 30, max: 300, step: 0.1 }}
                   helperText="Ваш текущий вес в килограммах"
+                  sx={{ width: '100%', maxWidth: '100%' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                <FormControl fullWidth sx={{ width: '100%', maxWidth: '100%' }}>
                   <InputLabel>Пол</InputLabel>
                   <Select
                     value={profileData.gender}
@@ -297,7 +340,7 @@ const Profile = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <TextField
                   fullWidth
                   label="Дата рождения"
@@ -306,10 +349,11 @@ const Profile = () => {
                   onChange={(e) => handleProfileChange('date_of_birth', e.target.value)}
                   InputLabelProps={{ shrink: true }}
                   helperText="Необходимо для расчета возраста"
+                  sx={{ width: '100%', maxWidth: '100%' }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                <FormControl fullWidth sx={{ width: '100%', maxWidth: '100%' }}>
                   <InputLabel>Цель</InputLabel>
                   <Select
                     value={profileData.goal}
@@ -322,8 +366,8 @@ const Profile = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
+              <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                <FormControl fullWidth sx={{ width: '100%', maxWidth: '100%' }}>
                   <InputLabel>Уровень активности</InputLabel>
                   <Select
                     value={profileData.activity_level}
@@ -344,72 +388,71 @@ const Profile = () => {
               Дополнительные настройки
             </Typography>
 
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={8}>
+            <Grid container spacing={3} sx={{ mb: 3, width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
+              <Grid item xs={12} md={8} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 <TextField
                   fullWidth
                   label="Display Name"
                   value={profileData.display_name}
                   onChange={(e) => handleProfileChange('display_name', e.target.value)}
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 2, width: '100%', maxWidth: '100%' }}
                 />
                 <FormControlLabel
                   control={
                     <Switch
                       checked={profileData.show_display_name}
                       onChange={(e) => handleProfileChange('show_display_name', e.target.checked)}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: '#ff6b35',
-                        },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: '#ff6b35',
-                        },
-                      }}
+                      color="primary"
                     />
                   }
                   label="Show Display Name on MunchLine"
                 />
-                <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mt: -1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mt: -1, wordBreak: 'break-word' }}>
                   You will appear as 'Anonymous User' on the MunchLine.
                 </Typography>
               </Grid>
             </Grid>
 
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            <Box sx={{ mb: 3, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, wordBreak: 'break-word' }}>
                 Dietary Preference
               </Typography>
-              <ToggleButtonGroup
-                value={profileData.dietary_preference}
-                exclusive
-                onChange={(e, value) => value && handleProfileChange('dietary_preference', value)}
-                sx={{
-                  '& .MuiToggleButton-root': {
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    '&.Mui-selected': {
-                      backgroundColor: '#ff6b35',
-                      color: '#fff',
-                      borderColor: '#ff6b35',
-                      '&:hover': {
-                        backgroundColor: '#ff6b35',
+              <Box sx={{ overflowX: 'auto', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                <ToggleButtonGroup
+                  value={profileData.dietary_preference}
+                  exclusive
+                  onChange={(e, value) => value && handleProfileChange('dietary_preference', value)}
+                  sx={{
+                    flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                    '& .MuiToggleButton-root': {
+                      color: 'text.secondary',
+                      borderColor: 'divider',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                      padding: { xs: '6px 8px', sm: '8px 16px' },
+                      borderRadius: '8px',
+                      '&.Mui-selected': {
+                        backgroundColor: 'primary.main',
+                        color: '#fff',
+                        borderColor: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'primary.dark',
+                        },
                       },
                     },
-                  },
-                }}
-              >
-                <ToggleButton value="none">None</ToggleButton>
-                <ToggleButton value="vegetarian">Vegetarian</ToggleButton>
-                <ToggleButton value="vegan">Vegan</ToggleButton>
-                <ToggleButton value="gluten_free">Gluten Free</ToggleButton>
-                <ToggleButton value="keto">Keto</ToggleButton>
-                <ToggleButton value="paleo">Paleo</ToggleButton>
-              </ToggleButtonGroup>
+                  }}
+                >
+                  <ToggleButton value="none">None</ToggleButton>
+                  <ToggleButton value="vegetarian">Vegetarian</ToggleButton>
+                  <ToggleButton value="vegan">Vegan</ToggleButton>
+                  <ToggleButton value="gluten_free">Gluten Free</ToggleButton>
+                  <ToggleButton value="keto">Keto</ToggleButton>
+                  <ToggleButton value="paleo">Paleo</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
             </Box>
 
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            <Box sx={{ mb: 3, width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, wordBreak: 'break-word' }}>
                 Theme Preference
               </Typography>
               <ToggleButtonGroup
@@ -417,13 +460,20 @@ const Profile = () => {
                 exclusive
                 onChange={(e, value) => value && handleProfileChange('theme_preference', value)}
                 sx={{
+                  flexWrap: { xs: 'wrap', sm: 'nowrap' },
                   '& .MuiToggleButton-root': {
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    color: 'text.secondary',
+                    borderColor: 'divider',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    padding: { xs: '6px 8px', sm: '8px 16px' },
+                    borderRadius: '8px',
                     '&.Mui-selected': {
-                      backgroundColor: '#ff6b35',
+                      backgroundColor: 'primary.main',
                       color: '#fff',
-                      borderColor: '#ff6b35',
+                      borderColor: 'primary.main',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      },
                     },
                   },
                 }}
@@ -435,18 +485,12 @@ const Profile = () => {
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-              <Button variant="outlined" sx={{ borderColor: 'rgba(255, 255, 255, 0.3)' }}>
+              <Button variant="outlined">
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 onClick={handleSaveProfile}
-                sx={{
-                  backgroundColor: '#ff6b35',
-                  '&:hover': {
-                    backgroundColor: '#e55a2b',
-                  },
-                }}
               >
                 Save Changes
               </Button>
@@ -461,8 +505,8 @@ const Profile = () => {
               You can manually adjust them here. These goals are used throughout the app to track your progress.
             </Alert>
             <form onSubmit={handleSaveGoals}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
+              <Grid container spacing={3} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
+                <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                   <TextField
                     fullWidth
                     label="Daily Calories"
@@ -474,7 +518,7 @@ const Profile = () => {
                     helperText="Your daily calorie target"
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                   <TextField
                     fullWidth
                     label="Daily Protein (g)"
@@ -484,9 +528,10 @@ const Profile = () => {
                     onChange={handleGoalsChange}
                     inputProps={{ min: 0 }}
                     helperText="Recommended protein intake"
+                    sx={{ width: '100%', maxWidth: '100%' }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                   <TextField
                     fullWidth
                     label="Daily Carbs (g)"
@@ -496,9 +541,10 @@ const Profile = () => {
                     onChange={handleGoalsChange}
                     inputProps={{ min: 0 }}
                     helperText="Recommended carbohydrate intake"
+                    sx={{ width: '100%', maxWidth: '100%' }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={6} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                   <TextField
                     fullWidth
                     label="Daily Fat (g)"
@@ -508,26 +554,20 @@ const Profile = () => {
                     onChange={handleGoalsChange}
                     inputProps={{ min: 0 }}
                     helperText="Recommended fat intake"
+                    sx={{ width: '100%', maxWidth: '100%' }}
                   />
                 </Grid>
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Box sx={{ display: 'flex', gap: 2, mt: 2, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
                     <Button
                       variant="outlined"
                       onClick={calculateNutrition}
-                      sx={{ borderColor: 'rgba(255, 255, 255, 0.3)' }}
                     >
                       Recalculate from Profile
                     </Button>
                     <Button
                       type="submit"
                       variant="contained"
-                      sx={{
-                        backgroundColor: '#ff6b35',
-                        '&:hover': {
-                          backgroundColor: '#e55a2b',
-                        },
-                      }}
                     >
                       Save Goals
                     </Button>
@@ -539,73 +579,171 @@ const Profile = () => {
         )}
 
         {tabValue === 2 && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
               Nutrition Calculations
             </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 3, wordBreak: 'break-word' }}>
               These values are calculated based on your profile information using the Harris-Benedict equation.
             </Typography>
             {nutritionData ? (
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card>
-                    <CardContent>
-                      <Typography color="textSecondary" gutterBottom>
+              <Grid container spacing={3} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
+                <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Card 
+                    sx={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.03) 100%)',
+                    }}
+                  >
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography 
+                        color="text.secondary" 
+                        gutterBottom 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          fontSize: '0.75rem',
+                        }}
+                      >
                         BMR
                       </Typography>
-                      <Typography variant="h5">
+                      <Typography 
+                        variant="h5" 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                        }}
+                      >
                         {nutritionData.bmr?.toFixed(0) || 'N/A'}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word', mt: 1 }}>
                         Calories/day
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card>
-                    <CardContent>
-                      <Typography color="textSecondary" gutterBottom>
+                <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Card 
+                    sx={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      background: 'linear-gradient(135deg, rgba(33, 150, 243, 0.08) 0%, rgba(33, 150, 243, 0.03) 100%)',
+                    }}
+                  >
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography 
+                        color="text.secondary" 
+                        gutterBottom 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          fontSize: '0.75rem',
+                        }}
+                      >
                         TDEE
                       </Typography>
-                      <Typography variant="h5">
+                      <Typography 
+                        variant="h5" 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #2196F3 0%, #64B5F6 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                        }}
+                      >
                         {nutritionData.tdee?.toFixed(0) || 'N/A'}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word', mt: 1 }}>
                         Calories/day
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card>
-                    <CardContent>
-                      <Typography color="textSecondary" gutterBottom>
+                <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Card 
+                    sx={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.08) 0%, rgba(255, 152, 0, 0.03) 100%)',
+                    }}
+                  >
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography 
+                        color="text.secondary" 
+                        gutterBottom 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          fontSize: '0.75rem',
+                        }}
+                      >
                         Daily Calories
                       </Typography>
-                      <Typography variant="h5">
+                      <Typography 
+                        variant="h5" 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                        }}
+                      >
                         {nutritionData.daily_calories?.toFixed(0) || 'N/A'}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-word', mt: 1 }}>
                         Based on goal
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card>
-                    <CardContent>
-                      <Typography color="textSecondary" gutterBottom>
+                <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                  <Card 
+                    sx={{ 
+                      width: '100%', 
+                      maxWidth: '100%', 
+                      boxSizing: 'border-box',
+                      background: 'linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(156, 39, 176, 0.03) 100%)',
+                    }}
+                  >
+                    <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <Typography 
+                        color="text.secondary" 
+                        gutterBottom 
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          fontWeight: 600,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          fontSize: '0.75rem',
+                        }}
+                      >
                         Macros
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ wordBreak: 'break-word', fontWeight: 600, color: '#4CAF50' }}>
                         P: {nutritionData.macros?.protein?.toFixed(0) || 'N/A'}g
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ wordBreak: 'break-word', fontWeight: 600, color: '#9C27B0' }}>
                         C: {nutritionData.macros?.carbs?.toFixed(0) || 'N/A'}g
                       </Typography>
-                      <Typography variant="body2">
+                      <Typography variant="body2" sx={{ wordBreak: 'break-word', fontWeight: 600, color: '#FFC107' }}>
                         F: {nutritionData.macros?.fat?.toFixed(0) || 'N/A'}g
                       </Typography>
                     </CardContent>
@@ -617,6 +755,30 @@ const Profile = () => {
                 Please complete your profile (weight, height, date of birth, gender, activity level, and goal) to see calculations.
               </Alert>
             )}
+          </Box>
+        )}
+
+        {tabValue === 3 && (
+          <MealReminderSettings />
+        )}
+
+        {tabValue === 4 && (
+          <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
+            <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
+              Account Actions
+            </Typography>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<LogoutIcon />}
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              sx={{ mt: 2 }}
+            >
+              Logout
+            </Button>
           </Box>
         )}
       </Paper>

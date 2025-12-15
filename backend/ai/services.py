@@ -158,7 +158,7 @@ class AIService:
                             timeout=10.0,
                         )
                         return response.choices[0].message.content
-                
+                    
                 except Exception as e:
                     print(f"Provider {provider} attempt {attempt + 1} failed: {e}")
                     if attempt < max_retries - 1:
@@ -392,7 +392,7 @@ class AIService:
             print(f"AI enhancement failed: {e}")
         
         return rule_based_analysis
-
+    
     def get_recommendations(self, user_data: Dict, current_nutrition: Dict) -> List[str]:
         """Get AI-powered nutrition recommendations"""
         recommendations = []
@@ -460,7 +460,7 @@ class AIService:
         
         # Fallback to mock
         return self._mock_meal_plan()
-
+    
     def _mock_behavior_analysis(self, meals_data: List[Dict], user_profile: Dict = None) -> Dict:
         """Rule-based behavior analysis"""
         if not meals_data:
@@ -533,7 +533,7 @@ class AIService:
             "recommendations": recommendations,
             "summary": summary
         }
-
+    
     def _mock_meal_plan(self) -> Dict:
         """Mock meal plan"""
         return {

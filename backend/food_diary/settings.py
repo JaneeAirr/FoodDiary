@@ -133,3 +133,8 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Google OAuth Settings (configured via .env)
+# GOOGLE_OAUTH_CLIENT_ID - from Google Cloud Console
+# GOOGLE_OAUTH_CLIENT_SECRET - from Google Cloud Console
+# GOOGLE_OAUTH_REDIRECT_URI - must match Google Console settings
+

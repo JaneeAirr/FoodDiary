@@ -29,6 +29,8 @@ const Dashboard = () => {
       const response = await api.get(`/api/daily-summary/?date=${selectedDate}`);
       console.log('Dashboard API response:', response.data);
       console.log('Meals count:', response.data?.meals?.length || 0);
+      console.log('Meals data:', JSON.stringify(response.data?.meals, null, 2));
+      console.log('Totals:', response.data?.totals);
       setSummary(response.data);
     } catch (error) {
       console.error('Failed to fetch summary:', error);
@@ -94,43 +96,122 @@ const Dashboard = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
-      
-      <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => {
-            console.log('Date changed to:', e.target.value);
-            setSelectedDate(e.target.value);
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: 4, width: '100%', maxWidth: '100%', mx: 'auto', overflow: 'hidden', px: { xs: 1, sm: 2 }, boxSizing: 'border-box' }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom 
+          sx={{ 
+            fontSize: { xs: '1.75rem', md: '2.5rem' },
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            mb: 1,
           }}
-          style={{ padding: '8px', fontSize: '16px', backgroundColor: '#1e1e1e', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '4px' }}
-        />
+        >
+          Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+          Track your daily nutrition and progress
+        </Typography>
+      </Box>
+      
+      <Box
+        sx={{
+          mb: 4,
+          display: 'flex',
+          gap: 2,
+          alignItems: 'center',
+          flexDirection: { xs: 'column', sm: 'row' },
+          flexWrap: 'wrap',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            '& input[type="date"]': {
+              padding: '12px 16px',
+              fontSize: '16px',
+              borderRadius: '12px',
+              border: '2px solid',
+              borderColor: 'divider',
+              backgroundColor: 'background.paper',
+              color: 'text.primary',
+              fontWeight: 500,
+              transition: 'all 0.2s',
+              '&:focus': {
+                outline: 'none',
+                borderColor: 'primary.main',
+                boxShadow: '0 0 0 3px rgba(76, 175, 80, 0.1)',
+              },
+            },
+          }}
+        >
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              console.log('Date changed to:', e.target.value);
+              setSelectedDate(e.target.value);
+            }}
+          />
+        </Box>
         <Button
           variant="outlined"
           startIcon={<RefreshIcon />}
           onClick={fetchDailySummary}
           disabled={loading}
+          sx={{
+            borderRadius: '12px',
+            px: 3,
+            py: 1.5,
+            borderWidth: 2,
+            '&:hover': {
+              borderWidth: 2,
+            },
+          }}
         >
           Refresh
         </Button>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ width: '100%', maxWidth: '100%', margin: 0, boxSizing: 'border-box' }}>
         {/* AI Survey Banner */}
         {(!goals || !summary?.goals) && (
-          <Grid item xs={12}>
-            <Card sx={{ backgroundColor: '#ff6b35', color: '#fff', mb: 2 }}>
-              <CardContent>
+          <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+            <Card 
+              sx={{ 
+                background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+                color: '#fff',
+                mb: 3,
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '200px',
+                  height: '200px',
+                  background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  transform: 'translate(30%, -30%)',
+                },
+              }}
+            >
+              <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', position: 'relative', zIndex: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                   <Box>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, fontSize: '1.25rem' }}>
                       🧠 Пройдите опрос для персонализированного питания!
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ opacity: 0.95 }}>
                       Заполните профиль (рост, вес, гендер, возраст, цель) и получите персональные рекомендации по БЖУ от ИИ
                     </Typography>
                   </Box>
@@ -138,8 +219,15 @@ const Dashboard = () => {
                     variant="contained"
                     sx={{
                       backgroundColor: '#fff',
-                      color: '#ff6b35',
-                      '&:hover': { backgroundColor: '#f5f5f5' },
+                      color: '#FF9800',
+                      fontWeight: 600,
+                      px: 3,
+                      '&:hover': { 
+                        backgroundColor: '#f5f5f5',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      },
+                      transition: 'all 0.2s',
                     }}
                     onClick={() => window.location.href = '/profile'}
                   >
@@ -150,36 +238,82 @@ const Dashboard = () => {
             </Card>
           </Grid>
         )}
-        <Grid item xs={12} md={3}>
-          <Card sx={{ border: '2px solid', borderColor: safeTotals.calories > (goals?.daily_calories || 0) ? '#ff6b35' : 'transparent' }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="subtitle2">
+        <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <Card 
+            sx={{ 
+              width: '100%', 
+              maxWidth: '100%', 
+              boxSizing: 'border-box',
+              background: safeTotals.calories > (goals?.daily_calories || 0) 
+                ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%)'
+                : 'linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.03) 100%)',
+              border: safeTotals.calories > (goals?.daily_calories || 0) ? '2px solid' : 'none',
+              borderColor: safeTotals.calories > (goals?.daily_calories || 0) ? 'error.main' : 'transparent',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', position: 'relative', zIndex: 1 }}>
+              <Typography 
+                color="text.secondary" 
+                gutterBottom 
+                variant="subtitle2"
+                sx={{ 
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                }}
+              >
                 КАЛОРИИ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#ff6b35' }}>
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  mb: 1,
+                }}
+              >
                 {safeTotals.calories.toFixed(0)}
               </Typography>
               {goals ? (
                 <>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
                     Цель: {goals.daily_calories.toFixed(0)} ккал
                   </Typography>
-                  <Box sx={{ mt: 1, width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                  <Box 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                      height: 10, 
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Box
                       sx={{
                         height: '100%',
                         width: `${Math.min(getProgress(safeTotals.calories, goals.daily_calories), 100)}%`,
-                        backgroundColor: getProgress(safeTotals.calories, goals.daily_calories) > 100 ? '#f44336' : '#ff6b35',
-                        borderRadius: 1,
+                        background: getProgress(safeTotals.calories, goals.daily_calories) > 100 
+                          ? 'linear-gradient(90deg, #F44336 0%, #E53935 100%)'
+                          : 'linear-gradient(90deg, #FF9800 0%, #F57C00 100%)',
+                        borderRadius: '10px',
+                        transition: 'width 0.5s ease',
+                        boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)',
                       }}
                     />
                   </Box>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>
                     {getProgress(safeTotals.calories, goals.daily_calories).toFixed(0)}% от цели
                   </Typography>
                 </>
               ) : (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Заполните профиль для установки цели
                 </Typography>
               )}
@@ -187,36 +321,78 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={3}>
-          <Card sx={{ border: '2px solid', borderColor: safeTotals.protein < (goals?.daily_protein || 0) * 0.7 ? '#f44336' : 'transparent' }}>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="subtitle2">
+        <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <Card 
+            sx={{ 
+              width: '100%', 
+              maxWidth: '100%', 
+              boxSizing: 'border-box',
+              background: safeTotals.protein < (goals?.daily_protein || 0) * 0.7
+                ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%)'
+                : 'linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.03) 100%)',
+              border: safeTotals.protein < (goals?.daily_protein || 0) * 0.7 ? '2px solid' : 'none',
+              borderColor: safeTotals.protein < (goals?.daily_protein || 0) * 0.7 ? 'error.main' : 'transparent',
+            }}
+          >
+            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+              <Typography 
+                color="text.secondary" 
+                gutterBottom 
+                variant="subtitle2"
+                sx={{ 
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                }}
+              >
                 БЕЛКИ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#82ca9d' }}>
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  background: 'linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  mb: 1,
+                }}
+              >
                 {safeTotals.protein.toFixed(1)}г
               </Typography>
               {goals ? (
                 <>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
                     Цель: {goals.daily_protein.toFixed(0)}г
                   </Typography>
-                  <Box sx={{ mt: 1, width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                  <Box 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                      height: 10, 
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Box
                       sx={{
                         height: '100%',
                         width: `${Math.min(getProgress(safeTotals.protein, goals.daily_protein), 100)}%`,
-                        backgroundColor: '#82ca9d',
-                        borderRadius: 1,
+                        background: 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)',
+                        borderRadius: '10px',
+                        transition: 'width 0.5s ease',
+                        boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
                       }}
                     />
                   </Box>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>
                     {getProgress(safeTotals.protein, goals.daily_protein).toFixed(0)}% от цели
                   </Typography>
                 </>
               ) : (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Заполните профиль для установки цели
                 </Typography>
               )}
@@ -224,36 +400,74 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="subtitle2">
+        <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <Card 
+            sx={{ 
+              width: '100%', 
+              maxWidth: '100%', 
+              boxSizing: 'border-box',
+              background: 'linear-gradient(135deg, rgba(156, 39, 176, 0.08) 0%, rgba(156, 39, 176, 0.03) 100%)',
+            }}
+          >
+            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+              <Typography 
+                color="text.secondary" 
+                gutterBottom 
+                variant="subtitle2"
+                sx={{ 
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                }}
+              >
                 УГЛЕВОДЫ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#8884d8' }}>
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  background: 'linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  mb: 1,
+                }}
+              >
                 {safeTotals.carbs.toFixed(1)}г
               </Typography>
               {goals ? (
                 <>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
                     Цель: {goals.daily_carbs.toFixed(0)}г
                   </Typography>
-                  <Box sx={{ mt: 1, width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                  <Box 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                      height: 10, 
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Box
                       sx={{
                         height: '100%',
                         width: `${Math.min(getProgress(safeTotals.carbs, goals.daily_carbs), 100)}%`,
-                        backgroundColor: '#8884d8',
-                        borderRadius: 1,
+                        background: 'linear-gradient(90deg, #9C27B0 0%, #BA68C8 100%)',
+                        borderRadius: '10px',
+                        transition: 'width 0.5s ease',
+                        boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)',
                       }}
                     />
                   </Box>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>
                     {getProgress(safeTotals.carbs, goals.daily_carbs).toFixed(0)}% от цели
                   </Typography>
                 </>
               ) : (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Заполните профиль для установки цели
                 </Typography>
               )}
@@ -261,36 +475,74 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom variant="subtitle2">
+        <Grid item xs={12} sm={6} md={3} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <Card 
+            sx={{ 
+              width: '100%', 
+              maxWidth: '100%', 
+              boxSizing: 'border-box',
+              background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.08) 0%, rgba(255, 193, 7, 0.03) 100%)',
+            }}
+          >
+            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+              <Typography 
+                color="text.secondary" 
+                gutterBottom 
+                variant="subtitle2"
+                sx={{ 
+                  fontWeight: 600,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                }}
+              >
                 ЖИРЫ
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#ffc658' }}>
+              <Typography 
+                variant="h3" 
+                sx={{ 
+                  fontWeight: 700, 
+                  background: 'linear-gradient(135deg, #FFC107 0%, #FFD54F 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  mb: 1,
+                }}
+              >
                 {safeTotals.fat.toFixed(1)}г
               </Typography>
               {goals ? (
                 <>
-                  <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 500 }}>
                     Цель: {goals.daily_fat.toFixed(0)}г
                   </Typography>
-                  <Box sx={{ mt: 1, width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}>
+                  <Box 
+                    sx={{ 
+                      mt: 2, 
+                      width: '100%', 
+                      height: 10, 
+                      backgroundColor: 'rgba(0,0,0,0.1)',
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                    }}
+                  >
                     <Box
                       sx={{
                         height: '100%',
                         width: `${Math.min(getProgress(safeTotals.fat, goals.daily_fat), 100)}%`,
-                        backgroundColor: '#ffc658',
-                        borderRadius: 1,
+                        background: 'linear-gradient(90deg, #FFC107 0%, #FFD54F 100%)',
+                        borderRadius: '10px',
+                        transition: 'width 0.5s ease',
+                        boxShadow: '0 2px 8px rgba(255, 193, 7, 0.3)',
                       }}
                     />
                   </Box>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>
                     {getProgress(safeTotals.fat, goals.daily_fat).toFixed(0)}% от цели
                   </Typography>
                 </>
               ) : (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   Заполните профиль для установки цели
                 </Typography>
               )}
@@ -298,31 +550,100 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Today's Meals
-            </Typography>
-            {summary?.meals && summary.meals.length > 0 ? (
-              <Box>
-                {summary.meals.map((meal) => (
-                  <Box key={meal.id} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                    <Typography variant="subtitle1">
-                      {meal.meal_type} - {meal.food.name}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {meal.quantity}g | {meal.total_calories.toFixed(0)} cal | 
-                      P: {meal.total_protein.toFixed(1)}g | 
-                      C: {meal.total_carbs.toFixed(1)}g | 
-                      F: {meal.total_fat.toFixed(1)}g
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Typography color="textSecondary">No meals logged for this date</Typography>
-            )}
-          </Paper>
+        <Grid item xs={12} sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+          <Card sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+            <CardContent sx={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+              <Typography 
+                variant="h6" 
+                gutterBottom 
+                sx={{ 
+                  wordBreak: 'break-word',
+                  fontWeight: 600,
+                  mb: 3,
+                }}
+              >
+                Today's Meals
+              </Typography>
+              {summary?.meals && Array.isArray(summary.meals) && summary.meals.length > 0 ? (
+                <Box sx={{ width: '100%', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {summary.meals.map((meal) => {
+                    const foodName = meal.food?.name || meal.food_name || 'Unknown Food';
+                    const mealType = meal.meal_type || 'Meal';
+                    const mealTypeLabels = {
+                      breakfast: '🌅 Завтрак',
+                      lunch: '🍽️ Обед',
+                      dinner: '🌙 Ужин',
+                      snack: '🍎 Перекус',
+                    };
+                    return (
+                      <Card
+                        key={meal.id || Math.random()}
+                        sx={{
+                          p: 2.5,
+                          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.02) 100%)',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: '12px',
+                          width: '100%',
+                          maxWidth: '100%',
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            transform: 'translateX(4px)',
+                            borderColor: 'primary.main',
+                            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.15)',
+                          },
+                        }}
+                      >
+                        <Typography 
+                          variant="subtitle1" 
+                          sx={{ 
+                            wordBreak: 'break-word',
+                            fontWeight: 600,
+                            mb: 1,
+                          }}
+                        >
+                          {mealTypeLabels[mealType] || mealType} - {foodName}
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                            {meal.quantity || 0}g
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#FF9800', fontWeight: 600 }}>
+                            {meal.total_calories?.toFixed(0) || 0} cal
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#4CAF50', fontWeight: 600 }}>
+                            P: {meal.total_protein?.toFixed(1) || 0}g
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#9C27B0', fontWeight: 600 }}>
+                            C: {meal.total_carbs?.toFixed(1) || 0}g
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: '#FFC107', fontWeight: 600 }}>
+                            F: {meal.total_fat?.toFixed(1) || 0}g
+                          </Typography>
+                        </Box>
+                      </Card>
+                    );
+                  })}
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    textAlign: 'center',
+                    py: 6,
+                    color: 'text.secondary',
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 1, opacity: 0.7 }}>
+                    {summary?.meals === undefined ? 'Loading meals...' : 'No meals logged for this date'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.5 }}>
+                    Add your first meal to start tracking!
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Container>

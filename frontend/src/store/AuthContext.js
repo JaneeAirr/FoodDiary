@@ -102,6 +102,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('refreshToken');
     setToken(null);
     setUser(null);
+    // Redirect will be handled by PrivateRoute component
   };
 
   const value = {

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from datetime import date
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings
 from users.serializers import UserSerializer
 
 
@@ -74,4 +74,11 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = '__all__'
         read_only_fields = ('user', 'created_at')
+
+
+class MealReminderSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MealReminderSettings
+        fields = '__all__'
+        read_only_fields = ('user', 'created_at', 'updated_at')
 

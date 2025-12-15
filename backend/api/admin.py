@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings
 
 
 @admin.register(Food)
@@ -36,4 +36,11 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ['notification_type', 'is_read', 'created_at', 'user']
     search_fields = ['user__username', 'title', 'message']
     date_hierarchy = 'created_at'
+
+
+@admin.register(MealReminderSettings)
+class MealReminderSettingsAdmin(admin.ModelAdmin):
+    list_display = ['user', 'reminders_enabled', 'breakfast_time', 'lunch_time', 'dinner_time', 'browser_notifications']
+    list_filter = ['reminders_enabled', 'browser_notifications', 'sound_enabled']
+    search_fields = ['user__username']
 
