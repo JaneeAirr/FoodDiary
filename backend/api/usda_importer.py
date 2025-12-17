@@ -32,21 +32,27 @@ class USDADataImporter:
             Dictionary with search results
         """
         url = f"{self.BASE_URL}/foods/search"
-        params = {
-            'api_key': self.api_key,
+        # Use POST for better compatibility with dataType filter
+        data = {
             'query': query,
             'pageSize': min(page_size, 200),
             'pageNumber': page_number,
             'dataType': ['Foundation', 'SR Legacy'],  # Exclude Branded Foods for now
         }
+        params = {
+            'api_key': self.api_key,
+        }
         
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.post(url, json=data, params=params, timeout=15)
             response.raise_for_status()
             time.sleep(self.RATE_LIMIT_DELAY)  # Rate limiting
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Error searching USDA: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response text: {e.response.text[:200]}")
             return {'foods': [], 'totalHits': 0}
     
     def get_food_details(self, fdc_id: int) -> Optional[Dict]:
@@ -62,16 +68,17 @@ class USDADataImporter:
         url = f"{self.BASE_URL}/food/{fdc_id}"
         params = {
             'api_key': self.api_key,
-            'nutrients': [203, 204, 205, 208, 291],  # Protein, Fat, Carbs, Calories, Fiber
         }
         
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, timeout=15)
             response.raise_for_status()
             time.sleep(self.RATE_LIMIT_DELAY)
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Error fetching food {fdc_id}: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"Response status: {e.response.status_code}")
             return None
     
     def parse_food_data(self, usda_food: Dict) -> Optional[Dict]:
@@ -88,31 +95,50 @@ class USDADataImporter:
             fdc_id = usda_food.get('fdcId')
             description = usda_food.get('description', '')
             
-            # Extract nutrients
+            if not fdc_id or not description:
+                return None
+            
+            # Extract nutrients - handle both search results and detailed food data
             nutrients = {}
-            for nutrient in usda_food.get('foodNutrients', []):
-                nutrient_id = nutrient.get('nutrient', {}).get('id')
-                amount = nutrient.get('amount', 0)
-                
-                # Map USDA nutrient IDs to our fields
-                # 208 = Energy (kcal), 203 = Protein, 204 = Fat, 205 = Carbs, 291 = Fiber
-                if nutrient_id == 208:
-                    nutrients['calories'] = amount
-                elif nutrient_id == 203:
-                    nutrients['protein'] = amount
-                elif nutrient_id == 204:
-                    nutrients['fat'] = amount
-                elif nutrient_id == 205:
-                    nutrients['carbs'] = amount
-                elif nutrient_id == 291:
-                    nutrients['fiber'] = amount
-                elif nutrient_id == 269:  # Sugar
-                    nutrients['sugar'] = amount
-                elif nutrient_id == 307:  # Sodium
-                    nutrients['sodium'] = amount
+            food_nutrients = usda_food.get('foodNutrients', [])
+            
+            for nutrient in food_nutrients:
+                # Handle different response formats
+                if isinstance(nutrient, dict):
+                    nutrient_info = nutrient.get('nutrient', {})
+                    if not nutrient_info:
+                        nutrient_info = nutrient
+                    
+                    nutrient_id = nutrient_info.get('id') or nutrient_info.get('number')
+                    amount = nutrient.get('amount', 0) or nutrient.get('value', 0)
+                    
+                    if not nutrient_id or amount is None:
+                        continue
+                    
+                    # Map USDA nutrient IDs to our fields
+                    # 208 = Energy (kcal), 203 = Protein, 204 = Fat, 205 = Carbs, 291 = Fiber
+                    if nutrient_id == 208:
+                        nutrients['calories'] = float(amount)
+                    elif nutrient_id == 203:
+                        nutrients['protein'] = float(amount)
+                    elif nutrient_id == 204:
+                        nutrients['fat'] = float(amount)
+                    elif nutrient_id == 205:
+                        nutrients['carbs'] = float(amount)
+                    elif nutrient_id == 291:
+                        nutrients['fiber'] = float(amount)
+                    elif nutrient_id == 269:  # Sugar
+                        nutrients['sugar'] = float(amount)
+                    elif nutrient_id == 307:  # Sodium
+                        nutrients['sodium'] = float(amount)
             
             # Check if we have required nutrients
             if not all(key in nutrients for key in ['calories', 'protein', 'carbs', 'fat']):
+                # Try to get detailed food data if search result doesn't have all nutrients
+                if usda_food.get('dataType') in ['Foundation', 'SR Legacy']:
+                    detailed = self.get_food_details(fdc_id)
+                    if detailed:
+                        return self.parse_food_data(detailed)
                 return None
             
             # Clean description (remove brand info if present)
@@ -129,16 +155,18 @@ class USDADataImporter:
                 'description': description[:500] if description else '',
                 'usda_fdc_id': fdc_id,
                 'data_source': 'usda',
-                'calories': nutrients.get('calories', 0),
-                'protein': nutrients.get('protein', 0),
-                'carbs': nutrients.get('carbs', 0),
-                'fat': nutrients.get('fat', 0),
-                'fiber': nutrients.get('fiber', 0),
-                'sugar': nutrients.get('sugar'),
-                'sodium': nutrients.get('sodium'),
+                'calories': max(0, nutrients.get('calories', 0)),
+                'protein': max(0, nutrients.get('protein', 0)),
+                'carbs': max(0, nutrients.get('carbs', 0)),
+                'fat': max(0, nutrients.get('fat', 0)),
+                'fiber': max(0, nutrients.get('fiber', 0)),
+                'sugar': nutrients.get('sugar') if nutrients.get('sugar') else None,
+                'sodium': nutrients.get('sodium') if nutrients.get('sodium') else None,
             }
         except Exception as e:
             print(f"Error parsing food data: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def import_popular_foods(self, food_names: List[str], max_per_food: int = 5) -> List[Dict]:

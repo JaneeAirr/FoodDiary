@@ -66,8 +66,33 @@ class Command(BaseCommand):
         if options['search']:
             self.stdout.write(self.style.SUCCESS(f"Searching for: {', '.join(options['search'])}"))
             for search_term in options['search']:
-                results = importer.import_popular_foods([search_term], max_per_food=options['limit'])
-                imported_foods.extend(results)
+                self.stdout.write(f"  Searching: {search_term}")
+                try:
+                    search_results = importer.search_foods(search_term, page_size=min(options['limit'], 50))
+                    foods = search_results.get('foods', [])
+                    self.stdout.write(f"  Found {len(foods)} results")
+                    
+                    for food in foods[:options['limit']]:
+                        parsed = importer.parse_food_data(food)
+                        if parsed:
+                            imported_foods.append(parsed)
+                            self.stdout.write(f"    [OK] Parsed: {parsed['name']}")
+                        else:
+                            # Try to get detailed data
+                            fdc_id = food.get('fdcId')
+                            if fdc_id:
+                                try:
+                                    detailed = importer.get_food_details(fdc_id)
+                                    if detailed:
+                                        parsed = importer.parse_food_data(detailed)
+                                        if parsed:
+                                            imported_foods.append(parsed)
+                                            self.stdout.write(f"    [OK] Parsed (detailed): {parsed['name']}")
+                                except Exception as e:
+                                    self.stdout.write(f"    [SKIP] Could not get details for FDC {fdc_id}: {e}")
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"  Error searching for {search_term}: {e}"))
+                    continue
         
         # Import by FDC IDs
         elif options['fdc_ids']:
