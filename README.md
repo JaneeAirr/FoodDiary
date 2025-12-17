@@ -54,6 +54,21 @@ npm start
 
 The app will be available at `http://localhost:3000`
 
+### Populate Food Database
+
+Import foods from public databases:
+
+```bash
+# Quick import (200+ popular foods, no API key needed)
+cd backend
+python manage.py import_foods_bulk --category all
+
+# Or import from USDA FoodData Central (requires API key)
+python manage.py import_usda_foods --popular --limit 100
+```
+
+See `backend/FOOD_DATABASE_IMPORT.md` for detailed instructions.
+
 ## ⚙️ Configuration
 
 ### Environment Variables
@@ -70,10 +85,14 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 GOOGLE_OAUTH_CLIENT_ID=your_client_id
 GOOGLE_OAUTH_CLIENT_SECRET=your_client_secret
 GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8000/api/auth/google/callback/
+
+# USDA FoodData Central API (optional - for food database expansion)
+USDA_API_KEY=your_usda_api_key
 ```
 
 See `backend/API_KEYS_SETUP.md` for AI setup instructions.
 See `backend/GOOGLE_OAUTH_SETUP.md` for Google OAuth setup instructions.
+See `backend/FOOD_DATABASE_IMPORT.md` for food database import instructions.
 
 ## 📚 Project Structure
 

@@ -11,12 +11,29 @@ class Food(models.Model):
     brand = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
     
+    # External IDs for data sources
+    usda_fdc_id = models.IntegerField(null=True, blank=True, unique=True, help_text="USDA FoodData Central ID")
+    data_source = models.CharField(
+        max_length=50,
+        choices=[
+            ('manual', 'Manual Entry'),
+            ('usda', 'USDA FoodData Central'),
+            ('openfoodfacts', 'Open Food Facts'),
+            ('nutritionix', 'Nutritionix'),
+        ],
+        default='manual'
+    )
+    
     # Nutrition per 100g
     calories = models.FloatField(validators=[MinValueValidator(0)])
     protein = models.FloatField(validators=[MinValueValidator(0)], help_text="grams per 100g")
     carbs = models.FloatField(validators=[MinValueValidator(0)], help_text="grams per 100g")
     fat = models.FloatField(validators=[MinValueValidator(0)], help_text="grams per 100g")
     fiber = models.FloatField(default=0, validators=[MinValueValidator(0)], help_text="grams per 100g")
+    
+    # Additional nutrition info (optional)
+    sugar = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)], help_text="grams per 100g")
+    sodium = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0)], help_text="mg per 100g")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -25,6 +42,8 @@ class Food(models.Model):
         ordering = ['name']
         indexes = [
             models.Index(fields=['name']),
+            models.Index(fields=['usda_fdc_id']),
+            models.Index(fields=['data_source']),
         ]
     
     def __str__(self):
