@@ -14,7 +14,7 @@ const api = axios.create({
 
 // Simple cache for GET requests
 const cache = new Map();
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 60000; // 60 seconds - increased for better performance
 
 // Add token to requests if available
 api.interceptors.request.use((config) => {
@@ -23,8 +23,12 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // Mark cacheable requests
-  if (config.method === 'get' && !config.url?.includes('/search') && !config.url?.includes('/callback') && !config.url?.includes('/statistics')) {
+  // Check cache for GET requests - exclude search, callback, statistics, and real-time endpoints
+  const nonCacheablePaths = ['/search', '/callback', '/statistics', '/notifications/unread_count'];
+  const isCacheable = config.method === 'get' && 
+    !nonCacheablePaths.some(path => config.url?.includes(path));
+  
+  if (isCacheable) {
     const cacheKey = `${config.url}?${new URLSearchParams(config.params || {}).toString()}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -50,8 +54,12 @@ api.interceptors.response.use(
       cache.clear();
     }
     
-    // Cache successful GET responses (skip if already cached)
-    if (response.config.method === 'get' && !response.config.url?.includes('/search') && !response.config.url?.includes('/callback') && !response.config.url?.includes('/statistics')) {
+    // Cache successful GET responses (skip search, callback, statistics, and real-time endpoints)
+    const nonCacheablePaths = ['/search', '/callback', '/statistics', '/notifications/unread_count'];
+    const shouldCache = response.config.method === 'get' && 
+      !nonCacheablePaths.some(path => response.config.url?.includes(path));
+    
+    if (shouldCache) {
       const cacheKey = `${response.config.url}?${new URLSearchParams(response.config.params || {}).toString()}`;
       cache.set(cacheKey, {
         data: response.data,

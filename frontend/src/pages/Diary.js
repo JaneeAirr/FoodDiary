@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -44,9 +45,20 @@ import CloseIcon from '@mui/icons-material/Close';
 import api, { clearCache } from '../services/api';
 
 const Diary = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [meals, setMeals] = useState([]);
   const [foods, setFoods] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Get date from URL params, localStorage, or default to today
+  const getInitialDate = () => {
+    const urlDate = searchParams.get('date');
+    if (urlDate) return urlDate;
+    const storedDate = localStorage.getItem('selectedDate');
+    if (storedDate) return storedDate;
+    return new Date().toISOString().split('T')[0];
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getInitialDate());
   const [open, setOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
   const [foodSearchTerm, setFoodSearchTerm] = useState('');
@@ -103,6 +115,32 @@ const Diary = () => {
     { value: 'recipes', label: 'Recipes' },
   ];
 
+  // Sync date with URL params and localStorage on mount
+  useEffect(() => {
+    const urlDate = searchParams.get('date');
+    if (urlDate && urlDate !== selectedDate) {
+      setSelectedDate(urlDate);
+      localStorage.setItem('selectedDate', urlDate);
+    } else if (!urlDate) {
+      // If no date in URL, use stored date or current date
+      const storedDate = localStorage.getItem('selectedDate');
+      if (storedDate && storedDate !== selectedDate) {
+        setSelectedDate(storedDate);
+        setSearchParams({ date: storedDate });
+      } else if (selectedDate) {
+        setSearchParams({ date: selectedDate });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Update URL and localStorage when date changes
+  const handleDateChange = (newDate) => {
+    setSelectedDate(newDate);
+    setSearchParams({ date: newDate });
+    localStorage.setItem('selectedDate', newDate);
+  };
+
   useEffect(() => {
     // Parallelize all requests for faster loading
     Promise.all([
@@ -119,22 +157,35 @@ const Diary = () => {
       if (e.key === 'foodSaved') {
         fetchFoods();
         window.localStorage.removeItem('foodSaved');
+      } else if (e.key === 'selectedDate' && e.newValue && e.newValue !== selectedDate) {
+        // Sync date from other tabs/components
+        setSelectedDate(e.newValue);
+        setSearchParams({ date: e.newValue });
       }
     };
 
+    // Listen for storage events (from other tabs)
     window.addEventListener('storage', handleStorageChange);
+    
+    // Also check localStorage periodically for same-tab updates
     const interval = setInterval(() => {
       if (window.localStorage.getItem('foodSaved')) {
         fetchFoods();
         window.localStorage.removeItem('foodSaved');
       }
-    }, 1000);
+      // Check if date changed in localStorage (from Dashboard in same tab)
+      const storedDate = localStorage.getItem('selectedDate');
+      if (storedDate && storedDate !== selectedDate) {
+        setSelectedDate(storedDate);
+        setSearchParams({ date: storedDate });
+      }
+    }, 500);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
-  }, []);
+  }, [selectedDate, setSearchParams]);
 
   const fetchMeals = async () => {
     try {
@@ -515,6 +566,19 @@ const Diary = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 2, mb: 4, width: '100%', maxWidth: '100%', mx: 'auto', px: { xs: 1, sm: 2 } }}>
+      {/* Date Selector */}
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Food Diary
+        </Typography>
+        <TextField
+          type="date"
+          value={selectedDate}
+          onChange={(e) => handleDateChange(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          sx={{ ml: 'auto' }}
+        />
+      </Box>
       <Grid container spacing={2}>
         {/* Left Panel - Activity Log */}
         <Grid item xs={12} md={3}>

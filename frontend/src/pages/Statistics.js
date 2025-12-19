@@ -49,7 +49,6 @@ const Statistics = () => {
     setLoading(true);
     try {
       const response = await api.get(`/api/statistics/?days=${days}`);
-      console.log('Statistics API response:', response.data);
       // API returns { nutrition: [...], weight: [...] }
       // Extract nutrition data
       const statsData = response.data?.nutrition || response.data || [];

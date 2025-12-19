@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import MonitorWeightIcon from '@mui/icons-material/MonitorWeight';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -15,6 +16,7 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 const navItems = [
   { label: 'Home', icon: <HomeIcon />, path: '/dashboard' },
   { label: 'Diary', icon: <RestaurantIcon />, path: '/diary' },
+  { label: 'Foods', icon: <RestaurantMenuIcon />, path: '/foods' },
   { label: 'Stats', icon: <BarChartIcon />, path: '/statistics' },
   { label: 'Weight', icon: <MonitorWeightIcon />, path: '/weight' },
   { label: 'AI', icon: <PsychologyIcon />, path: '/ai' },

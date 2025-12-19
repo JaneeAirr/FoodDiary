@@ -59,8 +59,8 @@ const createAppTheme = (mode) => {
         main: '#2196F3',
       },
       background: {
-        default: isDark ? '#0a0e27' : '#f8f9fa',
-        paper: isDark ? '#1a1f3a' : '#ffffff',
+        default: isDark ? '#0d1117' : '#f5f7fa',
+        paper: isDark ? '#161b22' : '#ffffff',
       },
       text: {
         primary: isDark ? '#ffffff' : '#1a1a1a',
@@ -95,7 +95,7 @@ const createAppTheme = (mode) => {
       },
     },
     shape: {
-      borderRadius: 16,
+      borderRadius: 12,
     },
     shadows: [
       'none',
@@ -110,12 +110,12 @@ const createAppTheme = (mode) => {
         styleOverrides: {
           root: {
             textTransform: 'none',
-            borderRadius: 12,
-            padding: '10px 24px',
+            borderRadius: 8,
+            padding: '10px 20px',
             fontWeight: 600,
             boxShadow: 'none',
             '&:hover': {
-              boxShadow: '0px 4px 12px rgba(76, 175, 80, 0.3)',
+              boxShadow: '0px 2px 8px rgba(76, 175, 80, 0.25)',
             },
           },
           contained: {
@@ -133,18 +133,20 @@ const createAppTheme = (mode) => {
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 20,
-            backgroundColor: isDark ? '#1a1f3a' : '#ffffff',
+            borderRadius: 12,
+            backgroundColor: isDark ? '#161b22' : '#ffffff',
             backgroundImage: 'none',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
             boxShadow: isDark 
-              ? '0px 4px 20px rgba(0, 0, 0, 0.3), 0px 0px 1px rgba(255, 255, 255, 0.1)'
-              : '0px 2px 12px rgba(0, 0, 0, 0.08), 0px 0px 1px rgba(0, 0, 0, 0.05)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              ? '0px 1px 3px rgba(0, 0, 0, 0.4)'
+              : '0px 1px 3px rgba(0, 0, 0, 0.08)',
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
-              transform: 'translateY(-2px)',
+              transform: 'translateY(-1px)',
               boxShadow: isDark 
-                ? '0px 8px 28px rgba(0, 0, 0, 0.4), 0px 0px 1px rgba(255, 255, 255, 0.15)'
-                : '0px 4px 20px rgba(0, 0, 0, 0.12), 0px 0px 1px rgba(0, 0, 0, 0.08)',
+                ? '0px 4px 12px rgba(0, 0, 0, 0.5)'
+                : '0px 4px 12px rgba(0, 0, 0, 0.12)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)',
             },
           },
         },
@@ -153,20 +155,37 @@ const createAppTheme = (mode) => {
         styleOverrides: {
           root: {
             backgroundImage: 'none',
-            borderRadius: 16,
+            borderRadius: 12,
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
           },
           elevation1: {
             boxShadow: isDark 
-              ? '0px 2px 8px rgba(0, 0, 0, 0.2)'
-              : '0px 1px 4px rgba(0, 0, 0, 0.08)',
+              ? '0px 1px 3px rgba(0, 0, 0, 0.4)'
+              : '0px 1px 3px rgba(0, 0, 0, 0.08)',
           },
         },
       },
       MuiChip: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
+            borderRadius: 6,
             fontWeight: 500,
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.08)',
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 8,
+              '& fieldset': {
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.15)',
+              },
+              '&:hover fieldset': {
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.25)',
+              },
+            },
           },
         },
       },
@@ -230,7 +249,6 @@ function AppContent() {
       setThemeMode(mode);
       setTheme(createAppTheme(mode));
       localStorage.setItem('themePreference', newPreference);
-      console.log('Theme changed to:', mode, 'from preference:', newPreference);
     };
     window.addEventListener('themeChanged', handleThemeChange);
     

@@ -7,11 +7,15 @@ A modern full-stack web application for tracking daily food intake, nutrition go
 - **User Authentication**: Register, login, logout with JWT tokens
 - **Google OAuth**: Sign in with Google account
 - **Food Tracking**: Add meals, track calories and macronutrients (protein, carbs, fat)
+- **Custom Recipes**: Create and manage custom recipes with ingredient search from full database
 - **Nutrition Goals**: Automatic calculation of BMR, TDEE, and daily calorie goals
 - **AI Assistant**: Personalized meal plans and nutrition advice
+- **Intermittent Fasting**: Track fasting sessions with multiple protocols (16:8, 18:6, 20:4, 24:0, custom)
+- **Water Tracking**: Monitor daily water intake with customizable goals
 - **Statistics**: Visual charts and graphs of your nutrition data
 - **Weight Tracking**: Monitor your weight progress over time
 - **Meal Reminders**: Browser notifications for scheduled meal times
+- **USDA Food Database**: Search and import foods from USDA FoodData Central
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## 🛠️ Tech Stack
@@ -21,6 +25,45 @@ A modern full-stack web application for tracking daily food intake, nutrition go
 - **Database**: SQLite (development)
 - **Authentication**: JWT tokens, Google OAuth 2.0
 - **AI**: OpenAI, Google Gemini, Anthropic Claude (with fallback)
+
+## 🚀 Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ExamWebProject
+   ```
+
+2. **Set up Backend**
+   ```bash
+   cd backend
+   python -m venv venv
+   # Windows:
+   venv\Scripts\activate
+   # Linux/Mac:
+   source venv/bin/activate
+   
+   pip install -r requirements.txt
+   python manage.py migrate
+   python manage.py runserver
+   ```
+   Backend will run on `http://localhost:8000`
+
+3. **Set up Frontend** (in a new terminal)
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+   Frontend will run on `http://localhost:3000`
+
+4. **Populate Food Database** (optional but recommended)
+   ```bash
+   cd backend
+   python manage.py import_foods_bulk --category all
+   ```
+
+5. **Create a user account** via the registration page and start tracking!
 
 ## 📦 Installation
 
@@ -114,15 +157,45 @@ ExamWebProject/
 
 ## 🔑 API Endpoints
 
+### Authentication
 - `POST /api/auth/register/` - User registration
 - `POST /api/auth/login/` - User login
 - `GET /api/auth/profile/` - Get user profile
-- `GET /api/foods/` - Search foods
+- `PUT /api/auth/profile/update/` - Update user profile
+
+### Foods & Recipes
+- `GET /api/foods/` - List foods with search
+- `GET /api/foods/search/` - Advanced food search (includes USDA database)
+- `GET /api/recipes/` - List user recipes
+- `POST /api/recipes/` - Create recipe
+- `PUT /api/recipes/{id}/` - Update recipe
+- `DELETE /api/recipes/{id}/` - Delete recipe
+
+### Meals & Nutrition
+- `GET /api/meals/` - List meals (filter by date)
 - `POST /api/meals/` - Create meal entry
 - `GET /api/daily-summary/` - Get daily nutrition summary
 - `GET /api/statistics/` - Get nutrition statistics
+- `POST /api/calculate-nutrition/` - Calculate BMR, TDEE, macros
+
+### Water Tracking
+- `GET /api/water/today/` - Get today's water intake
+- `POST /api/water/` - Add water intake entry
+- `GET /api/water-settings/my_settings/` - Get water settings
+- `PUT /api/water-settings/my_settings/` - Update water settings
+
+### Intermittent Fasting
+- `GET /api/fasting/` - List fasting sessions
+- `POST /api/fasting/start/` - Start fasting session
+- `POST /api/fasting/{id}/end/` - End fasting session
+- `GET /api/fasting/active/` - Get active fasting session
+- `GET /api/fasting-settings/my_settings/` - Get fasting settings
+- `PUT /api/fasting-settings/my_settings/` - Update fasting settings
+
+### AI Assistant
 - `POST /api/ai/chat/` - Chat with AI assistant
 - `POST /api/ai/generate-meal-plan/` - Generate personalized meal plan
+- `GET /api/ai/analyze-habits/` - Analyze eating habits
 
 ## 📝 License
 

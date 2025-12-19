@@ -16,6 +16,7 @@ import {
 import HomeIcon from '@mui/icons-material/Home';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -35,6 +36,7 @@ export const collapsedWidth = 64;
 const menuItems = [
   { text: 'Dashboard', icon: <HomeIcon />, path: '/dashboard' },
   { text: 'Diary', icon: <RestaurantIcon />, path: '/diary' },
+  { text: 'Foods', icon: <RestaurantMenuIcon />, path: '/foods' },
   { text: 'Statistics', icon: <BarChartIcon />, path: '/statistics' },
   { text: 'Weight', icon: <MonitorWeightIcon />, path: '/weight' },
   { text: 'AI Assistant', icon: <PsychologyIcon />, path: '/ai' },
@@ -81,13 +83,17 @@ const Sidebar = ({ onCollapseChange }) => {
           backgroundImage: 'none',
           transition: 'width 0.3s ease',
           overflowX: 'hidden',
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0,
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
         },
       }}
     >
       <Box 
         sx={{ 
           p: collapsed ? 2 : 3,
-          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%)',
+          background: 'transparent',
           borderBottom: '1px solid',
           borderColor: 'divider',
           display: 'flex',
@@ -149,16 +155,28 @@ const Sidebar = ({ onCollapseChange }) => {
                 onClick={() => navigate(item.path)}
                 sx={{
                   backgroundColor: isActive 
-                    ? 'rgba(76, 175, 80, 0.12)'
+                    ? 'rgba(76, 175, 80, 0.15)'
                     : 'transparent',
-                  borderRadius: collapsed ? '12px' : '0 12px 12px 0',
-                  mx: collapsed ? 1 : 1,
+                  borderRadius: collapsed ? '8px' : '0 8px 8px 0',
+                  mx: collapsed ? 1 : 0,
                   mb: 0.5,
                   justifyContent: collapsed ? 'center' : 'flex-start',
-                  px: collapsed ? 1 : 2,
+                  px: collapsed ? 1 : 2.5,
+                  position: 'relative',
+                  '&::before': isActive ? {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 3,
+                    height: '60%',
+                    backgroundColor: 'primary.main',
+                    borderRadius: '0 2px 2px 0',
+                  } : {},
                   '&:hover': {
-                    backgroundColor: isActive ? 'rgba(76, 175, 80, 0.15)' : 'rgba(76, 175, 80, 0.08)',
-                    transform: collapsed ? 'scale(1.05)' : 'translateX(4px)',
+                    backgroundColor: isActive ? 'rgba(76, 175, 80, 0.18)' : 'rgba(0, 0, 0, 0.04)',
+                    transform: 'none',
                   },
                   py: 1.5,
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -204,13 +222,13 @@ const Sidebar = ({ onCollapseChange }) => {
             <ListItemButton
               onClick={handleLogout}
               sx={{
-                borderRadius: collapsed ? '12px' : '0 12px 12px 0',
-                mx: 1,
+                borderRadius: collapsed ? '8px' : '0 8px 8px 0',
+                mx: 0,
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                px: collapsed ? 1 : 2,
+                px: collapsed ? 1 : 2.5,
                 '&:hover': {
                   backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                  transform: collapsed ? 'scale(1.05)' : 'translateX(4px)',
+                  transform: 'none',
                 },
                 py: 1.5,
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',

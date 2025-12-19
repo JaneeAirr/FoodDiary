@@ -68,6 +68,11 @@ const Foods = () => {
     food_id: '',
     quantity: '',
   });
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
+  const [ingredientSearchResults, setIngredientSearchResults] = useState({ saved: [], usda: [], recipes: [] });
+  const [ingredientSearching, setIngredientSearching] = useState(false);
+  const [selectedIngredientFood, setSelectedIngredientFood] = useState(null);
+  const [savingIngredientFoodId, setSavingIngredientFoodId] = useState(null);
   const [importUrlDialogOpen, setImportUrlDialogOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
@@ -124,6 +129,11 @@ const Foods = () => {
         ...(response.data.usda_foods || []),
         ...(response.data.saved_foods || []).filter(f => f.data_source === 'usda' || f.usda_fdc_id),
       ];
+      
+      // Debug: log first food to check data structure
+      if (allUsdaFoods.length > 0) {
+        console.log('Sample USDA food data:', allUsdaFoods[0]);
+      }
       
       setUsdaFoods(allUsdaFoods);
       if (allUsdaFoods.length === 0) {
@@ -246,6 +256,9 @@ const Foods = () => {
       });
     }
     setIngredientForm({ food_id: '', quantity: '' });
+    setIngredientSearchTerm('');
+    setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
+    setSelectedIngredientFood(null);
     setRecipeDialogOpen(true);
   };
 
@@ -254,6 +267,104 @@ const Foods = () => {
     setEditingRecipe(null);
     setRecipeForm({ name: '', description: '', servings: 1, ingredients: [] });
     setIngredientForm({ food_id: '', quantity: '' });
+    setIngredientSearchTerm('');
+    setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
+    setSelectedIngredientFood(null);
+  };
+
+  const searchIngredientFoods = async (query) => {
+    if (!query || query.length < 2) {
+      setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
+      return;
+    }
+
+    setIngredientSearching(true);
+    try {
+      const response = await api.get('/api/foods/search/', {
+        params: {
+          query: query,
+          limit: 50,
+          include_usda_api: false,
+        },
+      });
+      
+      setIngredientSearchResults({
+        saved: response.data.saved_foods || [],
+        usda: response.data.usda_foods || [],
+        recipes: response.data.recipes || [],
+      });
+    } catch (error) {
+      console.error('Failed to search foods:', error);
+      setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
+    } finally {
+      setIngredientSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (ingredientSearchTerm && ingredientSearchTerm.length >= 2) {
+        searchIngredientFoods(ingredientSearchTerm);
+      } else {
+        setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
+        setSelectedIngredientFood(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [ingredientSearchTerm]);
+
+  const saveAndSelectIngredientFood = async (usdaFood) => {
+    if (!usdaFood.fdc_id) {
+      showSnackbar('Ошибка: отсутствует ID продукта', 'error');
+      return;
+    }
+
+    setSavingIngredientFoodId(usdaFood.fdc_id);
+    try {
+      const response = await api.post('/api/usda/save/', {
+        fdc_id: usdaFood.fdc_id,
+      });
+
+      if (response.data && response.data.food) {
+        const savedFood = response.data.food;
+        setSelectedIngredientFood(savedFood);
+        setIngredientForm({ ...ingredientForm, food_id: savedFood.id });
+        setIngredientSearchTerm(savedFood.name);
+        setSavingIngredientFoodId(null);
+        showSnackbar('Продукт сохранен', 'success');
+      }
+    } catch (error) {
+      console.error('Failed to save USDA food:', error);
+      if (error.response?.status === 200 && error.response?.data?.food) {
+        const savedFood = error.response.data.food;
+        setSelectedIngredientFood(savedFood);
+        setIngredientForm({ ...ingredientForm, food_id: savedFood.id });
+        setIngredientSearchTerm(savedFood.name);
+        setSavingIngredientFoodId(null);
+      } else {
+        const errorMsg = error.response?.data?.error || error.message || 'Неизвестная ошибка';
+        showSnackbar(`Ошибка сохранения продукта: ${errorMsg}`, 'error');
+      }
+      setSavingIngredientFoodId(null);
+    }
+  };
+
+  const handleSelectIngredientFood = (food) => {
+    // If food has an id, it's already saved (either from saved_foods or already saved USDA)
+    if (food.id) {
+      setSelectedIngredientFood(food);
+      setIngredientForm({ ...ingredientForm, food_id: food.id });
+      setIngredientSearchTerm(food.name);
+    } else if (food.is_usda && food.fdc_id && !food.is_saved) {
+      // USDA food not yet saved - save it first
+      saveAndSelectIngredientFood(food);
+    } else {
+      // Fallback - should not happen
+      setSelectedIngredientFood(food);
+      setIngredientForm({ ...ingredientForm, food_id: food.id || food.fdc_id });
+      setIngredientSearchTerm(food.name);
+    }
   };
 
   const handleAddIngredient = () => {
@@ -261,11 +372,13 @@ const Foods = () => {
       showSnackbar('Заполните все поля ингредиента', 'warning');
       return;
     }
-    const food = foods.find(f => f.id === parseInt(ingredientForm.food_id));
+    
+    const food = selectedIngredientFood || foods.find(f => f.id === parseInt(ingredientForm.food_id));
     if (!food) {
       showSnackbar('Продукт не найден', 'error');
       return;
     }
+    
     setRecipeForm({
       ...recipeForm,
       ingredients: [
@@ -278,6 +391,9 @@ const Foods = () => {
       ],
     });
     setIngredientForm({ food_id: '', quantity: '' });
+    setIngredientSearchTerm('');
+    setSelectedIngredientFood(null);
+    setIngredientSearchResults({ saved: [], usda: [], recipes: [] });
   };
 
   const handleRemoveIngredient = (index) => {
@@ -373,96 +489,143 @@ const Foods = () => {
     }
   };
 
-  const FoodCard = ({ food, isUsda = false }) => (
-    <Card
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'all 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 4,
-        },
-      }}
-    >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
-            {food.name}
-          </Typography>
-          {isUsda && food.saved && (
-            <Chip
-              icon={<CheckCircleIcon />}
-              label="Сохранено"
-              color="success"
-              size="small"
-              sx={{ ml: 1 }}
-            />
+  const FoodCard = ({ food, isUsda = false }) => {
+    // Extract nutritional values - handle both direct properties and nested structures
+    // Also handle string to number conversion
+    const parseNumber = (value) => {
+      if (value === null || value === undefined) return 0;
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      return isNaN(num) ? 0 : num;
+    };
+    
+    const calories = parseNumber(food.calories || food.nutrition?.calories);
+    const protein = parseNumber(food.protein || food.nutrition?.protein);
+    const carbs = parseNumber(food.carbs || food.nutrition?.carbs);
+    const fat = parseNumber(food.fat || food.nutrition?.fat);
+    const fiber = parseNumber(food.fiber || food.nutrition?.fiber);
+    
+    // Get preparation state from description
+    const getPreparationState = () => {
+      if (!food.description) return '';
+      const desc = food.description.toLowerCase();
+      if (desc.includes('raw')) return 'raw';
+      if (desc.includes('cooked') || desc.includes('braised') || desc.includes('roasted') || desc.includes('grilled')) return 'cooked';
+      if (desc.includes('fried')) return 'fried';
+      return '';
+    };
+    
+    const prepState = getPreparationState();
+    const displayName = food.name || 'Unknown';
+    const displayDescription = food.description && food.description !== food.name ? food.description : '';
+    
+    return (
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          border: '1px solid',
+          borderColor: 'divider',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: 3,
+            borderColor: 'primary.main',
+          },
+        }}
+      >
+        <CardContent sx={{ flexGrow: 1, p: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, fontSize: '1.1rem' }}>
+                {displayName}
+              </Typography>
+              {prepState && (
+                <Chip 
+                  label={prepState} 
+                  size="small" 
+                  sx={{ 
+                    height: 20, 
+                    fontSize: '0.7rem',
+                    backgroundColor: prepState === 'raw' ? 'rgba(156, 39, 176, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                    color: prepState === 'raw' ? 'primary.main' : 'success.main',
+                  }} 
+                />
+              )}
+            </Box>
+            {isUsda && (food.saved || food.is_saved) && (
+              <Chip
+                icon={<CheckCircleIcon />}
+                label="Сохранено"
+                color="success"
+                size="small"
+                sx={{ ml: 1 }}
+              />
+            )}
+          </Box>
+          
+          {displayDescription && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8rem', lineHeight: 1.4 }}>
+              {displayDescription}
+            </Typography>
           )}
-        </Box>
-        
-        {food.brand && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {food.brand}
-          </Typography>
-        )}
-        
-        {food.description && food.description !== food.name && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.85rem' }}>
-            {food.description}
-          </Typography>
-        )}
 
-        <Box sx={{ mt: 2 }}>
-          <Grid container spacing={1}>
-            <Grid item xs={6}>
-              <Typography variant="body2" sx={{ color: '#FF9800', fontWeight: 600 }}>
-                Калории: {food.calories?.toFixed(0) || 0} kcal
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="body2" sx={{ color: '#4CAF50', fontWeight: 600 }}>
-                Белки: {food.protein?.toFixed(1) || 0}g
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="body2" sx={{ color: '#9C27B0', fontWeight: 600 }}>
-                Углеводы: {food.carbs?.toFixed(1) || 0}g
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="body2" sx={{ color: '#FFC107', fontWeight: 600 }}>
-                Жиры: {food.fat?.toFixed(1) || 0}g
-              </Typography>
-            </Grid>
-            {food.fiber && food.fiber > 0 && (
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary">
-                  Клетчатка: {food.fiber.toFixed(1)}g
+          <Box sx={{ mt: 2, p: 1.5, backgroundColor: 'rgba(0, 0, 0, 0.02)', borderRadius: 1 }}>
+            <Grid container spacing={1.5}>
+              <Grid item xs={6}>
+                <Typography variant="body2" sx={{ color: '#F44336', fontWeight: 600, fontSize: '0.875rem' }}>
+                  Калории: {calories > 0 ? calories.toFixed(0) : 'N/A'} {calories > 0 ? 'kcal' : ''}
                 </Typography>
               </Grid>
-            )}
-          </Grid>
-        </Box>
-
-        {isUsda && !food.saved && !food.is_saved && food.fdc_id && (
-          <Box sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={savingFoodId === food.fdc_id ? <CircularProgress size={16} /> : <SaveIcon />}
-              onClick={() => saveUsdaFood(food)}
-              disabled={savingFoodId === food.fdc_id}
-              fullWidth
-            >
-              {savingFoodId === food.fdc_id ? 'Сохранение...' : 'Сохранить в базу'}
-            </Button>
+              <Grid item xs={6}>
+                <Typography variant="body2" sx={{ color: '#4CAF50', fontWeight: 600, fontSize: '0.875rem' }}>
+                  Белки: {protein > 0 ? protein.toFixed(1) : 'N/A'} {protein > 0 ? 'g' : ''}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body2" sx={{ color: '#9C27B0', fontWeight: 600, fontSize: '0.875rem' }}>
+                  Углеводы: {carbs > 0 ? carbs.toFixed(1) : 'N/A'} {carbs > 0 ? 'g' : ''}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body2" sx={{ color: '#FFC107', fontWeight: 600, fontSize: '0.875rem' }}>
+                  Жиры: {fat > 0 ? fat.toFixed(1) : 'N/A'} {fat > 0 ? 'g' : ''}
+                </Typography>
+              </Grid>
+              {fiber > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    Клетчатка: {fiber.toFixed(1)}g
+                  </Typography>
+                </Grid>
+              )}
+            </Grid>
           </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
+
+          {isUsda && !food.saved && !food.is_saved && (food.fdc_id || food.usda_fdc_id) && (
+            <Box sx={{ mt: 2 }}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={savingFoodId === (food.fdc_id || food.usda_fdc_id) ? <CircularProgress size={16} /> : <SaveIcon />}
+                onClick={() => saveUsdaFood(food)}
+                disabled={savingFoodId === (food.fdc_id || food.usda_fdc_id)}
+                fullWidth
+                sx={{
+                  backgroundColor: '#4CAF50',
+                  '&:hover': {
+                    backgroundColor: '#45a049',
+                  },
+                }}
+              >
+                {savingFoodId === (food.fdc_id || food.usda_fdc_id) ? 'Сохранение...' : 'Сохранить в базу'}
+              </Button>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Container
@@ -806,32 +969,119 @@ const Foods = () => {
             Ингредиенты
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel>Продукт</InputLabel>
-              <Select
-                value={ingredientForm.food_id}
-                onChange={(e) => setIngredientForm({ ...ingredientForm, food_id: e.target.value })}
-                label="Продукт"
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <TextField
+                fullWidth
+                label="Поиск продукта"
+                placeholder="Введите название продукта..."
+                value={ingredientSearchTerm}
+                onChange={(e) => setIngredientSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                label="Количество (г)"
+                type="number"
+                value={ingredientForm.quantity}
+                onChange={(e) => setIngredientForm({ ...ingredientForm, quantity: e.target.value })}
+                inputProps={{ min: 0.1, step: 0.1 }}
+                sx={{ width: 150 }}
+              />
+              <Button 
+                variant="contained" 
+                onClick={handleAddIngredient} 
+                startIcon={<AddIcon />}
+                disabled={!ingredientForm.food_id || !ingredientForm.quantity}
               >
-                {foods.map((food) => (
-                  <MenuItem key={food.id} value={food.id}>
-                    {food.name} ({food.calories?.toFixed(0) || 0} cal/100g)
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Количество (г)"
-              type="number"
-              value={ingredientForm.quantity}
-              onChange={(e) => setIngredientForm({ ...ingredientForm, quantity: e.target.value })}
-              inputProps={{ min: 0.1, step: 0.1 }}
-              sx={{ width: 150 }}
-            />
-            <Button variant="contained" onClick={handleAddIngredient} startIcon={<AddIcon />}>
-              Добавить
-            </Button>
+                Добавить
+              </Button>
+            </Box>
+
+            {/* Search Results */}
+            {ingredientSearching && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            )}
+
+            {!ingredientSearching && ingredientSearchTerm.length >= 2 && (
+              <Box sx={{ maxHeight: 300, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                {(() => {
+                  const allFoods = [
+                    ...ingredientSearchResults.saved.map(f => ({ ...f, is_saved: true })),
+                    ...ingredientSearchResults.usda.map(f => ({ ...f, is_usda: true, is_saved: f.is_saved || false })),
+                  ];
+                  
+                  if (allFoods.length === 0) {
+                    return (
+                      <Box sx={{ p: 2, textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Продукты не найдены
+                        </Typography>
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <List dense>
+                      {allFoods.map((food) => (
+                        <ListItem
+                          key={food.id || food.fdc_id}
+                          button
+                          onClick={() => handleSelectIngredientFood(food)}
+                          selected={ingredientForm.food_id === food.id}
+                          disabled={savingIngredientFoodId === food.fdc_id}
+                        >
+                          <ListItemText
+                            primary={food.name}
+                            secondary={
+                              food.brand 
+                                ? `${food.brand} • ${(food.calories || food.nutrition?.calories || 0).toFixed(0)} cal/100g`
+                                : `${(food.calories || food.nutrition?.calories || 0).toFixed(0)} cal/100g`
+                            }
+                          />
+                          {food.is_usda && (
+                            <Chip 
+                              label={food.is_saved ? "USDA (сохранено)" : "USDA"} 
+                              size="small" 
+                              color={food.is_saved ? "success" : "default"}
+                              sx={{ ml: 1 }}
+                            />
+                          )}
+                          {savingIngredientFoodId === food.fdc_id && (
+                            <CircularProgress size={16} sx={{ ml: 1 }} />
+                          )}
+                        </ListItem>
+                      ))}
+                    </List>
+                  );
+                })()}
+              </Box>
+            )}
+
+            {ingredientSearchTerm.length < 2 && !selectedIngredientFood && (
+              <Typography variant="body2" color="text.secondary" sx={{ p: 1, textAlign: 'center' }}>
+                Введите минимум 2 символа для поиска продуктов
+              </Typography>
+            )}
+
+            {selectedIngredientFood && (
+              <Box sx={{ p: 1, bgcolor: 'action.selected', borderRadius: 1, mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Выбран: {selectedIngredientFood.name}
+                  {selectedIngredientFood.brand && ` (${selectedIngredientFood.brand})`}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {(selectedIngredientFood.calories || selectedIngredientFood.nutrition?.calories || 0).toFixed(0)} cal/100g
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           <List>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Container,
@@ -16,9 +16,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import api, { clearCache } from '../services/api';
 import CustomCalendar from '../components/CustomCalendar';
 import WaterTracker from '../components/WaterTracker';
+import FastingTracker from '../components/FastingTracker';
 
 // Wrapper component to conditionally render WaterTracker based on settings
-const WaterTrackerWrapper = ({ date, onUpdate }) => {
+const WaterTrackerWrapper = React.memo(({ date, onUpdate }) => {
   const [widgetEnabled, setWidgetEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +27,7 @@ const WaterTrackerWrapper = ({ date, onUpdate }) => {
     try {
       const response = await api.get('/api/water-settings/my_settings/');
       if (response.data) {
-        setWidgetEnabled(response.data.widget_enabled !== false);
+        setWidgetEnabled(response.data.widget_enabled === true);
       }
     } catch (error) {
       console.error('Failed to fetch water settings:', error);
@@ -43,7 +44,7 @@ const WaterTrackerWrapper = ({ date, onUpdate }) => {
     // Listen for settings updates
     const handleSettingsUpdate = (event) => {
       if (event.detail && event.detail.widget_enabled !== undefined) {
-        setWidgetEnabled(event.detail.widget_enabled !== false);
+        setWidgetEnabled(event.detail.widget_enabled === true);
       } else {
         // Refresh settings if detail is not provided
         fetchWaterSettings();
@@ -52,15 +53,8 @@ const WaterTrackerWrapper = ({ date, onUpdate }) => {
     
     window.addEventListener('waterSettingsUpdated', handleSettingsUpdate);
     
-    // Also refresh when window gains focus (user might have changed settings in another tab)
-    const handleFocus = () => {
-      fetchWaterSettings();
-    };
-    window.addEventListener('focus', handleFocus);
-    
     return () => {
       window.removeEventListener('waterSettingsUpdated', handleSettingsUpdate);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [fetchWaterSettings]);
 
@@ -73,28 +67,83 @@ const WaterTrackerWrapper = ({ date, onUpdate }) => {
   }
 
   return <WaterTracker date={date} onUpdate={onUpdate} />;
-};
+});
+
+// Wrapper component to conditionally render FastingTracker based on settings
+const FastingTrackerWrapper = React.memo(() => {
+  const [widgetEnabled, setWidgetEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const fetchFastingSettings = useCallback(async () => {
+    try {
+      const response = await api.get('/api/fasting-settings/my_settings/');
+      if (response.data) {
+        setWidgetEnabled(response.data.widget_enabled === true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch fasting settings:', error);
+      setWidgetEnabled(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFastingSettings();
+    
+    const handleSettingsUpdate = (event) => {
+      if (event.detail && event.detail.widget_enabled !== undefined) {
+        setWidgetEnabled(event.detail.widget_enabled === true);
+      } else {
+        fetchFastingSettings();
+      }
+    };
+    
+    window.addEventListener('fastingSettingsUpdated', handleSettingsUpdate);
+    
+    return () => {
+      window.removeEventListener('fastingSettingsUpdated', handleSettingsUpdate);
+    };
+  }, [fetchFastingSettings]);
+
+  if (loading) {
+    return null;
+  }
+
+  if (!widgetEnabled) {
+    return null;
+  }
+
+  return <FastingTracker />;
+});
 
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Get date from localStorage or default to today
+  const getInitialDate = () => {
+    const storedDate = localStorage.getItem('selectedDate');
+    if (storedDate) return storedDate;
+    return new Date().toISOString().split('T')[0];
+  };
+  
+  const [selectedDate, setSelectedDate] = useState(getInitialDate());
   const location = useLocation();
   const hasFetchedRef = useRef(false);
+  
+  // Save date to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('selectedDate', selectedDate);
+  }, [selectedDate]);
 
   const fetchDailySummary = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('Fetching summary for date:', selectedDate);
       const response = await api.get(`/api/daily-summary/?date=${selectedDate}`);
-      console.log('Dashboard API response:', response.data);
-      console.log('Meals count:', response.data?.meals?.length || 0);
-      console.log('Meals data:', JSON.stringify(response.data?.meals, null, 2));
-      console.log('Totals:', response.data?.totals);
       setSummary(response.data);
     } catch (error) {
       console.error('Failed to fetch summary:', error);
-      console.error('Error details:', error.response?.data);
       setSummary(null);
     } finally {
       setLoading(false);
@@ -106,10 +155,13 @@ const Dashboard = () => {
     hasFetchedRef.current = true;
   }, [fetchDailySummary]);
 
-  // Refresh when navigating to this page
+  // Refresh when navigating to this page - debounced
   useEffect(() => {
     if (hasFetchedRef.current && location.pathname === '/dashboard') {
-      fetchDailySummary();
+      const timeoutId = setTimeout(() => {
+        fetchDailySummary();
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
   }, [location.pathname, fetchDailySummary]);
 
@@ -137,13 +189,18 @@ const Dashboard = () => {
   // Refresh when window gains focus (user returns to tab) - with debounce
   useEffect(() => {
     let timeoutId;
+    let lastFocusTime = 0;
     const handleFocus = () => {
       if (hasFetchedRef.current) {
-        // Debounce to avoid multiple rapid refreshes
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          fetchDailySummary();
-        }, 500);
+        const now = Date.now();
+        // Only refresh if last refresh was more than 2 seconds ago
+        if (now - lastFocusTime > 2000) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            lastFocusTime = Date.now();
+            fetchDailySummary();
+          }, 500);
+        }
       }
     };
     window.addEventListener('focus', handleFocus);
@@ -152,6 +209,25 @@ const Dashboard = () => {
       clearTimeout(timeoutId);
     };
   }, [fetchDailySummary]);
+
+  // Memoize totals and goals to prevent unnecessary recalculations
+  // Must be called before any conditional returns (React Hooks rule)
+  const safeTotals = useMemo(() => {
+    const totals = summary?.totals || { 
+      calories: 0, 
+      protein: 0, 
+      carbs: 0, 
+      fat: 0 
+    };
+    return {
+      calories: Number(totals.calories) || 0,
+      protein: Number(totals.protein) || 0,
+      carbs: Number(totals.carbs) || 0,
+      fat: Number(totals.fat) || 0
+    };
+  }, [summary?.totals]);
+  
+  const goals = useMemo(() => summary?.goals, [summary?.goals]);
 
   if (loading) {
     return (
@@ -162,22 +238,6 @@ const Dashboard = () => {
       </Container>
     );
   }
-
-  const totals = summary?.totals || { 
-    calories: 0, 
-    protein: 0, 
-    carbs: 0, 
-    fat: 0 
-  };
-  
-  // Ensure all values are numbers
-  const safeTotals = {
-    calories: Number(totals.calories) || 0,
-    protein: Number(totals.protein) || 0,
-    carbs: Number(totals.carbs) || 0,
-    fat: Number(totals.fat) || 0
-  };
-  const goals = summary?.goals;
 
   const getProgress = (current, goal) => {
     if (!goal || goal === 0) return 0;
@@ -213,17 +273,18 @@ const Dashboard = () => {
           <CustomCalendar
             selectedDate={selectedDate}
             onDateChange={(date) => {
-              console.log('Date changed to:', date);
               setSelectedDate(date);
+              localStorage.setItem('selectedDate', date);
             }}
             highlightDates={[]}
           />
         </Grid>
         <Grid item xs={12} md={8}>
-          <WaterTracker
+          <WaterTrackerWrapper
             date={selectedDate}
             onUpdate={fetchDailySummary}
           />
+          <FastingTrackerWrapper />
         </Grid>
       </Grid>
       

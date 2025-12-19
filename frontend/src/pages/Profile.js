@@ -26,16 +26,20 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
+import TimerIcon from '@mui/icons-material/Timer';
 import api from '../services/api';
 import { useAuth } from '../store/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import MealReminderSettings from '../components/MealReminderSettings';
 import WaterSettings from '../components/WaterSettings';
+import FastingSettings from '../components/FastingSettings';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [tabValue, setTabValue] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'fasting' ? 5 : 0;
+  const [tabValue, setTabValue] = useState(initialTab);
   const [profileData, setProfileData] = useState({
     display_name: user?.username || '',
     show_display_name: false,
@@ -254,6 +258,7 @@ const Profile = () => {
           <Tab label="Calculations" iconPosition="start" />
           <Tab label="Reminders" icon={<NotificationsIcon />} iconPosition="start" />
           <Tab label="Water" icon={<LocalDrinkIcon />} iconPosition="start" />
+          <Tab label="Fasting" icon={<TimerIcon />} iconPosition="start" />
           <Tab label="Account" icon={<LogoutIcon />} iconPosition="start" />
         </Tabs>
 
@@ -770,6 +775,10 @@ const Profile = () => {
         )}
 
         {tabValue === 5 && (
+          <FastingSettings />
+        )}
+
+        {tabValue === 6 && (
           <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
             <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
               Account Actions
