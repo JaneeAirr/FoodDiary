@@ -24,6 +24,7 @@ const MealReminderSettings = () => {
     active_days: '0,1,2,3,4,5,6',
     browser_notifications: true,
     sound_enabled: false,
+    email_notifications: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -78,6 +79,7 @@ const MealReminderSettings = () => {
           active_days: response.data.active_days || '0,1,2,3,4,5,6',
           browser_notifications: response.data.browser_notifications ?? true,
           sound_enabled: response.data.sound_enabled ?? false,
+          email_notifications: response.data.email_notifications ?? false,
         });
       }
     } catch (error) {
@@ -288,9 +290,27 @@ const MealReminderSettings = () => {
                 }
                 label="Sound Alerts"
               />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
                 Play sound with notifications
               </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={settings.email_notifications}
+                    onChange={(e) => handleChange('email_notifications', e.target.checked)}
+                  />
+                }
+                label="Email Notifications"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Receive email reminders for meals (requires verified email address)
+              </Typography>
+              {settings.email_notifications && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  Email notifications will be sent to your registered email address at meal times.
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </>

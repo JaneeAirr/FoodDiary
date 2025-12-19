@@ -18,7 +18,9 @@ def get_google_oauth_url():
     from urllib.parse import urlencode
     
     google_client_id = config('GOOGLE_OAUTH_CLIENT_ID', default='')
-    redirect_uri = config('GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:8000/api/auth/google/callback/')
+    # Frontend redirect URI - Google will redirect here after authentication
+    frontend_url = config('FRONTEND_URL', default='http://localhost:3000')
+    redirect_uri = config('GOOGLE_OAUTH_REDIRECT_URI', default=f'{frontend_url}/auth/google/callback')
     
     if not google_client_id:
         return None
@@ -72,7 +74,9 @@ def google_callback(request):
     # Exchange code for tokens
     google_client_id = config('GOOGLE_OAUTH_CLIENT_ID', default='')
     google_client_secret = config('GOOGLE_OAUTH_CLIENT_SECRET', default='')
-    redirect_uri = config('GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:8000/api/auth/google/callback/')
+    # Frontend redirect URI - must match the one used in authorization
+    frontend_url = config('FRONTEND_URL', default='http://localhost:3000')
+    redirect_uri = config('GOOGLE_OAUTH_REDIRECT_URI', default=f'{frontend_url}/auth/google/callback')
     
     if not google_client_id or not google_client_secret:
         return Response({

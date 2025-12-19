@@ -13,7 +13,67 @@ import {
   LinearProgress,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import api from '../services/api';
+import api, { clearCache } from '../services/api';
+import CustomCalendar from '../components/CustomCalendar';
+import WaterTracker from '../components/WaterTracker';
+
+// Wrapper component to conditionally render WaterTracker based on settings
+const WaterTrackerWrapper = ({ date, onUpdate }) => {
+  const [widgetEnabled, setWidgetEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const fetchWaterSettings = useCallback(async () => {
+    try {
+      const response = await api.get('/api/water-settings/my_settings/');
+      if (response.data) {
+        setWidgetEnabled(response.data.widget_enabled !== false);
+      }
+    } catch (error) {
+      console.error('Failed to fetch water settings:', error);
+      // Default to enabled if settings don't exist
+      setWidgetEnabled(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWaterSettings();
+    
+    // Listen for settings updates
+    const handleSettingsUpdate = (event) => {
+      if (event.detail && event.detail.widget_enabled !== undefined) {
+        setWidgetEnabled(event.detail.widget_enabled !== false);
+      } else {
+        // Refresh settings if detail is not provided
+        fetchWaterSettings();
+      }
+    };
+    
+    window.addEventListener('waterSettingsUpdated', handleSettingsUpdate);
+    
+    // Also refresh when window gains focus (user might have changed settings in another tab)
+    const handleFocus = () => {
+      fetchWaterSettings();
+    };
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('waterSettingsUpdated', handleSettingsUpdate);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchWaterSettings]);
+
+  if (loading) {
+    return null; // Don't show anything while loading
+  }
+
+  if (!widgetEnabled) {
+    return null; // Don't render widget if disabled
+  }
+
+  return <WaterTracker date={date} onUpdate={onUpdate} />;
+};
 
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -53,15 +113,44 @@ const Dashboard = () => {
     }
   }, [location.pathname, fetchDailySummary]);
 
-  // Refresh when window gains focus (user returns to tab)
+  // Listen for updates from Diary and Weight pages
   useEffect(() => {
+    const handleDiaryUpdate = () => {
+      clearCache();
+      fetchDailySummary();
+    };
+    
+    const handleWeightUpdate = () => {
+      clearCache();
+      fetchDailySummary();
+    };
+
+    window.addEventListener('diaryUpdated', handleDiaryUpdate);
+    window.addEventListener('weightUpdated', handleWeightUpdate);
+
+    return () => {
+      window.removeEventListener('diaryUpdated', handleDiaryUpdate);
+      window.removeEventListener('weightUpdated', handleWeightUpdate);
+    };
+  }, [fetchDailySummary]);
+
+  // Refresh when window gains focus (user returns to tab) - with debounce
+  useEffect(() => {
+    let timeoutId;
     const handleFocus = () => {
       if (hasFetchedRef.current) {
-        fetchDailySummary();
+        // Debounce to avoid multiple rapid refreshes
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          fetchDailySummary();
+        }, 500);
       }
     };
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearTimeout(timeoutId);
+    };
   }, [fetchDailySummary]);
 
   if (loading) {
@@ -119,6 +208,25 @@ const Dashboard = () => {
         </Typography>
       </Box>
       
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <CustomCalendar
+            selectedDate={selectedDate}
+            onDateChange={(date) => {
+              console.log('Date changed to:', date);
+              setSelectedDate(date);
+            }}
+            highlightDates={[]}
+          />
+        </Grid>
+        <Grid item xs={12} md={8}>
+          <WaterTracker
+            date={selectedDate}
+            onUpdate={fetchDailySummary}
+          />
+        </Grid>
+      </Grid>
+      
       <Box
         sx={{
           mb: 4,
@@ -129,36 +237,6 @@ const Dashboard = () => {
           flexWrap: 'wrap',
         }}
       >
-        <Box
-          sx={{
-            position: 'relative',
-            '& input[type="date"]': {
-              padding: '12px 16px',
-              fontSize: '16px',
-              borderRadius: '12px',
-              border: '2px solid',
-              borderColor: 'divider',
-              backgroundColor: 'background.paper',
-              color: 'text.primary',
-              fontWeight: 500,
-              transition: 'all 0.2s',
-              '&:focus': {
-                outline: 'none',
-                borderColor: 'primary.main',
-                boxShadow: '0 0 0 3px rgba(76, 175, 80, 0.1)',
-              },
-            },
-          }}
-        >
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => {
-              console.log('Date changed to:', e.target.value);
-              setSelectedDate(e.target.value);
-            }}
-          />
-        </Box>
         <Button
           variant="outlined"
           startIcon={<RefreshIcon />}
@@ -610,17 +688,22 @@ const Dashboard = () => {
                             {meal.quantity || 0}g
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#FF9800', fontWeight: 600 }}>
-                            {meal.total_calories?.toFixed(0) || 0} cal
+                            {meal.total_calories?.toFixed(0) || 0} кал
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#4CAF50', fontWeight: 600 }}>
-                            P: {meal.total_protein?.toFixed(1) || 0}g
+                            Б: {meal.total_protein?.toFixed(1) || 0}г
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#9C27B0', fontWeight: 600 }}>
-                            C: {meal.total_carbs?.toFixed(1) || 0}g
+                            У: {meal.total_carbs?.toFixed(1) || 0}г
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#FFC107', fontWeight: 600 }}>
-                            F: {meal.total_fat?.toFixed(1) || 0}g
+                            Ж: {meal.total_fat?.toFixed(1) || 0}г
                           </Typography>
+                          {meal.food?.fiber && meal.food.fiber > 0 && (
+                            <Typography variant="body2" sx={{ color: '#607D8B', fontWeight: 500 }}>
+                              Клетчатка: {((meal.food.fiber * (meal.quantity || 0)) / 100).toFixed(1)}г
+                            </Typography>
+                          )}
                         </Box>
                       </Card>
                     );

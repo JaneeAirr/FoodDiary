@@ -20,13 +20,62 @@ def check_and_create_daily_notifications(user):
     """
     Check user's daily nutrition and create notifications if needed
     Should be called periodically (e.g., via cron job or celery task)
+    Also checks if user missed scheduled meal times
     """
+    from datetime import datetime, time
     today = date.today()
     notifications_created = []
     
     # Check if user has added meals today
     # Use select_related to avoid N+1 queries
-    meals_today = Meal.objects.filter(user=user, date=today).select_related('food')
+    meals_today = Meal.objects.filter(user=user, date=today).select_related('food', 'recipe')
+    
+    # Check meal reminders - see if user missed scheduled meals
+    try:
+        reminder_settings = user.meal_reminder_settings
+        if reminder_settings.reminders_enabled:
+            now = datetime.now()
+            current_time = now.time()
+            
+            # Check each meal time
+            meal_times = {
+                'breakfast': reminder_settings.breakfast_time,
+                'lunch': reminder_settings.lunch_time,
+                'dinner': reminder_settings.dinner_time,
+                'snack': reminder_settings.snack_time,
+            }
+            
+            meal_names = {
+                'breakfast': 'Завтрак',
+                'lunch': 'Обед',
+                'dinner': 'Ужин',
+                'snack': 'Перекус',
+            }
+            
+            for meal_type, meal_time in meal_times.items():
+                if not meal_time:
+                    continue
+                
+                # Check if meal time has passed (more than 30 minutes ago)
+                meal_datetime = datetime.combine(today, meal_time)
+                time_diff = (now - meal_datetime).total_seconds() / 60  # minutes
+                
+                # If meal time passed more than 30 minutes ago and no meal was logged
+                if 30 <= time_diff <= 120:  # Between 30 minutes and 2 hours after meal time
+                    meals_of_type = meals_today.filter(meal_type=meal_type)
+                    if meals_of_type.count() == 0:
+                        # User missed this meal
+                        notification = create_notification(
+                            user=user,
+                            notification_type='reminder',
+                            title=f'Пропущен {meal_names[meal_type]}',
+                            message=f'Вы пропустили {meal_names[meal_type].lower()} в {meal_time.strftime("%H:%M")}. Не забудьте добавить прием пищи!'
+                        )
+                        notifications_created.append(notification)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error checking meal reminders: {e}", exc_info=True)
     
     # Don't create reminder if meal was just created (count will be at least 1)
     # Only create reminder if no meals existed before
@@ -43,9 +92,8 @@ def check_and_create_daily_notifications(user):
     # Check calorie goals
     try:
         goals = user.nutrition_goal
-        total_calories = meals_today.aggregate(
-            total=Sum('total_calories')
-        )['total'] or 0
+        # Calculate total calories manually since total_calories is a property
+        total_calories = sum(meal.total_calories for meal in meals_today)
         
         if total_calories > goals.daily_calories * 1.1:  # 10% over goal
             notification = create_notification(
@@ -76,9 +124,8 @@ def check_and_create_daily_notifications(user):
     # Check protein intake
     try:
         goals = user.nutrition_goal
-        total_protein = meals_today.aggregate(
-            total=Sum('total_protein')
-        )['total'] or 0
+        # Calculate total protein manually since total_protein is a property
+        total_protein = sum(meal.total_protein for meal in meals_today)
         
         if total_protein < goals.daily_protein * 0.7:  # Less than 70% of goal
             notification = create_notification(

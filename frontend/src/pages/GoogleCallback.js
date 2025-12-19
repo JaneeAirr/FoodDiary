@@ -29,38 +29,27 @@ const GoogleCallback = () => {
       }
 
       try {
-        // Send code to backend
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/api/auth/google/callback/?code=${code}&format=json`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json',
-          },
+        // Use api service for consistency and better error handling
+        const response = await api.get(`/api/auth/google/callback/`, {
+          params: { code, format: 'json' }
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Failed to authenticate' }));
-          throw new Error(errorData.error || 'Authentication failed');
-        }
-
-        const data = await response.json();
-
-        if (data.tokens) {
+        if (response.data.tokens) {
           // Save tokens
-          localStorage.setItem('accessToken', data.tokens.access);
-          localStorage.setItem('refreshToken', data.tokens.refresh);
+          localStorage.setItem('accessToken', response.data.tokens.access);
+          localStorage.setItem('refreshToken', response.data.tokens.refresh);
           
-          // Redirect to dashboard
+          // Redirect immediately without waiting
           window.location.href = '/dashboard';
         } else {
-          setError(data.error || 'Failed to authenticate with Google');
+          setError(response.data.error || 'Failed to authenticate with Google');
           setLoading(false);
           setTimeout(() => navigate('/login'), 3000);
         }
       } catch (error) {
         console.error('Callback error:', error);
-        setError(error.message || 'Failed to process Google authentication');
+        const errorMsg = error.response?.data?.error || error.message || 'Failed to process Google authentication';
+        setError(errorMsg);
         setLoading(false);
         setTimeout(() => navigate('/login'), 3000);
       }

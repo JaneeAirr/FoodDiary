@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
 import { AuthProvider, useAuth } from './store/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
-import Sidebar from './components/Sidebar';
+import Sidebar, { drawerWidth, collapsedWidth } from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -182,6 +182,7 @@ function AppContent() {
     return getThemeMode(saved);
   });
   const [theme, setTheme] = useState(() => createAppTheme(getThemeMode(localStorage.getItem('themePreference') || 'dark')));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Start reminder service when user is authenticated
   useEffect(() => {
@@ -272,14 +273,18 @@ function AppContent() {
               path="/*"
               element={
                 <PrivateRoute>
-                  <Sidebar />
+                  <Sidebar onCollapseChange={setSidebarCollapsed} />
                   <Box
                     component="main"
                     sx={{
                       flexGrow: 1,
                       p: { xs: 2, sm: 3 },
-                      // Отступ под сайдбар только на десктопе
-                      ml: { xs: 0, md: '240px' },
+                      // Отступ под сайдбар только на десктопе - динамический
+                      ml: { 
+                        xs: 0, 
+                        md: sidebarCollapsed ? `${collapsedWidth}px` : `${drawerWidth}px` 
+                      },
+                      transition: 'margin-left 0.3s ease',
                       // Отступ снизу под мобильную навигацию
                       pb: { xs: 7, md: 3 },
                       backgroundColor: theme.palette.background.default,

@@ -19,6 +19,7 @@ class User(AbstractUser):
     )
     height = models.FloatField(null=True, blank=True, help_text="Height in cm")
     weight = models.FloatField(null=True, blank=True, help_text="Weight in kg")
+    target_weight = models.FloatField(null=True, blank=True, help_text="Target weight in kg")
     goal = models.CharField(
         max_length=20,
         choices=[

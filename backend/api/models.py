@@ -60,10 +60,11 @@ class Meal(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='meals')
-    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='meals')
+    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='meals', null=True, blank=True)
+    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, related_name='meals', null=True, blank=True)
     date = models.DateField()
     meal_type = models.CharField(max_length=20, choices=MEAL_TYPES)
-    quantity = models.FloatField(validators=[MinValueValidator(0.1)], help_text="Quantity in grams")
+    quantity = models.FloatField(validators=[MinValueValidator(0.1)], help_text="Quantity in grams or servings for recipes")
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -74,24 +75,51 @@ class Meal(models.Model):
             models.Index(fields=['user', 'date']),
         ]
     
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.food and not self.recipe:
+            raise ValidationError('Either food or recipe must be provided')
+        if self.food and self.recipe:
+            raise ValidationError('Cannot have both food and recipe')
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
     @property
     def total_calories(self):
+        if self.recipe:
+            # For recipes, quantity is in servings
+            return (self.recipe.calories_per_serving * self.quantity)
         return (self.food.calories * self.quantity) / 100
     
     @property
     def total_protein(self):
+        if self.recipe:
+            return (self.recipe.protein_per_serving * self.quantity)
         return (self.food.protein * self.quantity) / 100
     
     @property
     def total_carbs(self):
+        if self.recipe:
+            return (self.recipe.carbs_per_serving * self.quantity)
         return (self.food.carbs * self.quantity) / 100
     
     @property
     def total_fat(self):
+        if self.recipe:
+            return (self.recipe.fat_per_serving * self.quantity)
         return (self.food.fat * self.quantity) / 100
     
+    @property
+    def name(self):
+        if self.recipe:
+            return self.recipe.name
+        return self.food.name if self.food else 'Unknown'
+    
     def __str__(self):
-        return f"{self.user.username} - {self.food.name} ({self.date})"
+        name = self.name
+        return f"{self.user.username} - {name} ({self.date})"
 
 
 class NutritionGoal(models.Model):
@@ -172,6 +200,8 @@ class MealReminderSettings(models.Model):
     # Notification preferences
     browser_notifications = models.BooleanField(default=True)
     sound_enabled = models.BooleanField(default=False)
+    email_notifications = models.BooleanField(default=False, help_text="Enable email notifications for meal reminders")
+    email_verified = models.BooleanField(default=False, help_text="Email address is verified")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -184,7 +214,161 @@ class MealReminderSettings(models.Model):
         return f"{self.user.username}'s meal reminders"
     
     def get_active_days_list(self):
-        """Convert active_days string to list of integers"""
+        """Return active days as a list of integers"""
         if not self.active_days:
             return []
         return [int(day.strip()) for day in self.active_days.split(',') if day.strip().isdigit()]
+
+
+class WaterIntake(models.Model):
+    """Daily water intake tracking"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='water_intakes')
+    date = models.DateField()
+    amount_ml = models.FloatField(default=0, help_text="Water intake in milliliters")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-date', '-created_at']
+        unique_together = ['user', 'date']  # One entry per user per day
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.amount_ml}ml ({self.date})"
+    
+    @property
+    def amount_fl_oz(self):
+        """Convert ml to fl oz (1 fl oz = 29.5735 ml)"""
+        return self.amount_ml / 29.5735
+
+
+class WaterSettings(models.Model):
+    """User settings for water tracking"""
+    UNIT_CHOICES = [
+        ('ml', 'Milliliters (ml)'),
+        ('fl_oz', 'Fluid Ounces (fl oz)'),
+        ('cups', 'Cups'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='water_settings')
+    
+    # Widget visibility
+    widget_enabled = models.BooleanField(default=True, help_text="Show water widget on dashboard")
+    
+    # Unit preference
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='fl_oz', help_text="Preferred unit for water display")
+    
+    # Daily goal (in ml, converted from user's preferred unit)
+    daily_goal_ml = models.FloatField(default=2000, help_text="Daily water goal in milliliters")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Water Settings"
+        verbose_name_plural = "Water Settings"
+    
+    def __str__(self):
+        return f"{self.user.username}'s water settings"
+    
+    @property
+    def daily_goal_display(self):
+        """Get daily goal in user's preferred unit"""
+        if self.unit == 'ml':
+            return self.daily_goal_ml
+        elif self.unit == 'fl_oz':
+            return self.daily_goal_ml / 29.5735
+        elif self.unit == 'cups':
+            return self.daily_goal_ml / 236.588  # 1 cup = 236.588 ml
+        return self.daily_goal_ml
+
+
+class Recipe(models.Model):
+    """Custom recipes created by users"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recipes')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    servings = models.FloatField(default=1, validators=[MinValueValidator(0.1)], help_text="Number of servings")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'name']),
+        ]
+    
+    @property
+    def total_calories(self):
+        """Total calories per recipe"""
+        return sum(ingredient.total_calories for ingredient in self.ingredients.all())
+    
+    @property
+    def total_protein(self):
+        """Total protein per recipe"""
+        return sum(ingredient.total_protein for ingredient in self.ingredients.all())
+    
+    @property
+    def total_carbs(self):
+        """Total carbs per recipe"""
+        return sum(ingredient.total_carbs for ingredient in self.ingredients.all())
+    
+    @property
+    def total_fat(self):
+        """Total fat per recipe"""
+        return sum(ingredient.total_fat for ingredient in self.ingredients.all())
+    
+    @property
+    def calories_per_serving(self):
+        """Calories per serving"""
+        return self.total_calories / self.servings if self.servings > 0 else 0
+    
+    @property
+    def protein_per_serving(self):
+        """Protein per serving"""
+        return self.total_protein / self.servings if self.servings > 0 else 0
+    
+    @property
+    def carbs_per_serving(self):
+        """Carbs per serving"""
+        return self.total_carbs / self.servings if self.servings > 0 else 0
+    
+    @property
+    def fat_per_serving(self):
+        """Fat per serving"""
+        return self.total_fat / self.servings if self.servings > 0 else 0
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+
+class RecipeIngredient(models.Model):
+    """Ingredients in a recipe"""
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredients')
+    food = models.ForeignKey(Food, on_delete=models.CASCADE, related_name='recipe_ingredients')
+    quantity = models.FloatField(validators=[MinValueValidator(0.1)], help_text="Quantity in grams")
+    
+    class Meta:
+        ordering = ['food__name']
+        unique_together = ['recipe', 'food']
+    
+    @property
+    def total_calories(self):
+        return (self.food.calories * self.quantity) / 100
+    
+    @property
+    def total_protein(self):
+        return (self.food.protein * self.quantity) / 100
+    
+    @property
+    def total_carbs(self):
+        return (self.food.carbs * self.quantity) / 100
+    
+    @property
+    def total_fat(self):
+        return (self.food.fat * self.quantity) / 100
+    
+    def __str__(self):
+        return f"{self.recipe.name} - {self.food.name} ({self.quantity}g)"

@@ -25,10 +25,12 @@ import {
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
 import api from '../services/api';
 import { useAuth } from '../store/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import MealReminderSettings from '../components/MealReminderSettings';
+import WaterSettings from '../components/WaterSettings';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -251,6 +253,7 @@ const Profile = () => {
           <Tab label="Goals" iconPosition="start" />
           <Tab label="Calculations" iconPosition="start" />
           <Tab label="Reminders" icon={<NotificationsIcon />} iconPosition="start" />
+          <Tab label="Water" icon={<LocalDrinkIcon />} iconPosition="start" />
           <Tab label="Account" icon={<LogoutIcon />} iconPosition="start" />
         </Tabs>
 
@@ -763,6 +766,10 @@ const Profile = () => {
         )}
 
         {tabValue === 4 && (
+          <WaterSettings />
+        )}
+
+        {tabValue === 5 && (
           <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
             <Typography variant="h6" gutterBottom sx={{ wordBreak: 'break-word' }}>
               Account Actions
