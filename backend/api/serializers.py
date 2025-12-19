@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from datetime import date
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, WaterIntake, WaterSettings, Recipe, RecipeIngredient
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, WaterIntake, WaterSettings, Recipe, RecipeIngredient, FastingSession, FastingSettings
 from users.serializers import UserSerializer
 
 
@@ -168,6 +168,29 @@ class WaterSettingsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = WaterSettings
+        fields = '__all__'
+        read_only_fields = ('user', 'created_at', 'updated_at')
+
+
+class FastingSessionSerializer(serializers.ModelSerializer):
+    duration_minutes = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = FastingSession
+        fields = '__all__'
+        read_only_fields = ('user', 'created_at', 'updated_at', 'duration_minutes')
+    
+    def validate(self, data):
+        """Validate that end_time is after start_time"""
+        if data.get('end_time') and data.get('start_time'):
+            if data['end_time'] <= data['start_time']:
+                raise serializers.ValidationError("End time must be after start time.")
+        return data
+
+
+class FastingSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FastingSettings
         fields = '__all__'
         read_only_fields = ('user', 'created_at', 'updated_at')
 

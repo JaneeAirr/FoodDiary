@@ -11,6 +11,8 @@ router.register(r'notifications', views.NotificationViewSet, basename='notificat
 router.register(r'meal-reminders', views.MealReminderSettingsViewSet, basename='meal-reminder')
 router.register(r'water', views.WaterIntakeViewSet, basename='water')
 router.register(r'water-settings', views.WaterSettingsViewSet, basename='water-settings')
+router.register(r'fasting', views.FastingSessionViewSet, basename='fasting')
+router.register(r'fasting-settings', views.FastingSettingsViewSet, basename='fasting-settings')
 router.register(r'recipes', views.RecipeViewSet, basename='recipe')
 
 urlpatterns = [

@@ -199,19 +199,23 @@ class USDADataImporter:
                     
                     # Map USDA nutrient IDs to our fields
                     # 208 = Energy (kcal), 203 = Protein, 204 = Fat, 205 = Carbs, 291 = Fiber
-                    if nutrient_id == 208 or nutrient_id == '208':
+                    # Also check nutrient name as fallback
+                    nutrient_name = (nutrient_info.get('name') or nutrient.get('name') or '').lower()
+                    
+                    # Map by ID first (most reliable)
+                    if str(nutrient_id) == '208' or 'energy' in nutrient_name:
                         nutrients['calories'] = amount
-                    elif nutrient_id == 203 or nutrient_id == '203':
+                    elif str(nutrient_id) == '203' or 'protein' in nutrient_name:
                         nutrients['protein'] = amount
-                    elif nutrient_id == 204 or nutrient_id == '204':
+                    elif str(nutrient_id) == '204' or ('total fat' in nutrient_name and 'saturated' not in nutrient_name):
                         nutrients['fat'] = amount
-                    elif nutrient_id == 205 or nutrient_id == '205':
+                    elif str(nutrient_id) == '205' or ('carbohydrate' in nutrient_name and 'fiber' not in nutrient_name and 'sugar' not in nutrient_name):
                         nutrients['carbs'] = amount
-                    elif nutrient_id == 291 or nutrient_id == '291':
+                    elif str(nutrient_id) == '291' or 'fiber' in nutrient_name:
                         nutrients['fiber'] = amount
-                    elif nutrient_id == 269 or nutrient_id == '269':  # Sugar
+                    elif str(nutrient_id) == '269' or ('sugar' in nutrient_name and 'total' in nutrient_name):
                         nutrients['sugar'] = amount
-                    elif nutrient_id == 307 or nutrient_id == '307':  # Sodium
+                    elif str(nutrient_id) == '307' or 'sodium' in nutrient_name:
                         nutrients['sodium'] = amount
             
             # Be very lenient - if no calories found, try to get detailed data

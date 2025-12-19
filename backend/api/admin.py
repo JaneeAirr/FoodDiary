@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, Recipe, RecipeIngredient
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, Recipe, RecipeIngredient, FastingSession, FastingSettings
 
 
 @admin.register(Food)
@@ -75,4 +75,31 @@ class RecipeAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(FastingSession)
+class FastingSessionAdmin(admin.ModelAdmin):
+    list_display = ['user', 'start_time', 'end_time', 'duration_minutes', 'is_active', 'created_at']
+    list_filter = ['is_active', 'start_time', 'user']
+    search_fields = ['user__username', 'notes']
+    date_hierarchy = 'start_time'
+    readonly_fields = ['duration_minutes', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Session Information', {
+            'fields': ('user', 'start_time', 'end_time', 'is_active', 'duration_minutes')
+        }),
+        ('Additional Information', {
+            'fields': ('notes', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(FastingSettings)
+class FastingSettingsAdmin(admin.ModelAdmin):
+    list_display = ['user', 'widget_enabled', 'protocol', 'custom_fasting_hours', 'eating_window_start', 'notifications_enabled']
+    list_filter = ['widget_enabled', 'protocol', 'notifications_enabled']
+    search_fields = ['user__username']
+    readonly_fields = ['created_at', 'updated_at']
 

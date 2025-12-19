@@ -372,3 +372,81 @@ class RecipeIngredient(models.Model):
     
     def __str__(self):
         return f"{self.recipe.name} - {self.food.name} ({self.quantity}g)"
+
+
+class FastingSession(models.Model):
+    """Fasting session tracking"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fasting_sessions')
+    start_time = models.DateTimeField(help_text="When the fasting period started")
+    end_time = models.DateTimeField(null=True, blank=True, help_text="When the fasting period ended (null if ongoing)")
+    duration_minutes = models.IntegerField(null=True, blank=True, help_text="Duration in minutes (calculated)")
+    is_active = models.BooleanField(default=True, help_text="Whether this session is currently active")
+    notes = models.TextField(blank=True, help_text="Optional notes about this fasting session")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-start_time']
+        indexes = [
+            models.Index(fields=['user', 'start_time']),
+            models.Index(fields=['user', 'is_active']),
+        ]
+    
+    def __str__(self):
+        status = "Active" if self.is_active else "Completed"
+        return f"{self.user.username} - {self.start_time.date()} - {status}"
+    
+    def calculate_duration(self):
+        """Calculate duration in minutes"""
+        if self.end_time:
+            delta = self.end_time - self.start_time
+            return int(delta.total_seconds() / 60)
+        else:
+            from django.utils import timezone
+            delta = timezone.now() - self.start_time
+            return int(delta.total_seconds() / 60)
+    
+    def save(self, *args, **kwargs):
+        if self.end_time or not self.is_active:
+            self.duration_minutes = self.calculate_duration()
+        super().save(*args, **kwargs)
+
+
+class FastingSettings(models.Model):
+    """User settings for fasting tracking"""
+    FASTING_PROTOCOLS = [
+        ('16:8', '16:8 (16 hours fast, 8 hours eating)'),
+        ('18:6', '18:6 (18 hours fast, 6 hours eating)'),
+        ('20:4', '20:4 (20 hours fast, 4 hours eating)'),
+        ('24:0', '24:0 (24 hours fast)'),
+        ('custom', 'Custom'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='fasting_settings')
+    
+    # Widget visibility
+    widget_enabled = models.BooleanField(default=True, help_text="Show fasting widget on dashboard")
+    
+    # Fasting protocol
+    protocol = models.CharField(max_length=10, choices=FASTING_PROTOCOLS, default='16:8', help_text="Preferred fasting protocol")
+    
+    # Custom fasting duration (in hours, for custom protocol)
+    custom_fasting_hours = models.IntegerField(null=True, blank=True, default=16, help_text="Custom fasting duration in hours")
+    
+    # Eating window start time (default 12:00)
+    eating_window_start = models.TimeField(default='12:00', help_text="Start time of eating window (HH:MM)")
+    
+    # Notifications
+    notifications_enabled = models.BooleanField(default=True, help_text="Enable fasting notifications")
+    notify_fast_start = models.BooleanField(default=True, help_text="Notify when fasting period starts")
+    notify_fast_end = models.BooleanField(default=True, help_text="Notify when fasting period ends")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Fasting Settings"
+        verbose_name_plural = "Fasting Settings"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.protocol}"

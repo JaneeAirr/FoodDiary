@@ -6,11 +6,12 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import date, timedelta
 from collections import defaultdict
-from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, WaterIntake, WaterSettings, Recipe, RecipeIngredient
+from .models import Food, Meal, NutritionGoal, WeightEntry, Notification, MealReminderSettings, WaterIntake, WaterSettings, Recipe, RecipeIngredient, FastingSession, FastingSettings
 from .serializers import (
     FoodSerializer, MealSerializer, NutritionGoalSerializer,
     WeightEntrySerializer, NotificationSerializer, MealReminderSettingsSerializer,
-    WaterIntakeSerializer, WaterSettingsSerializer, RecipeSerializer, RecipeIngredientSerializer
+    WaterIntakeSerializer, WaterSettingsSerializer, RecipeSerializer, RecipeIngredientSerializer,
+    FastingSessionSerializer, FastingSettingsSerializer
 )
 from .notification_service import check_and_create_daily_notifications
 from .utils import (
@@ -1055,6 +1056,108 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             except RecipeIngredient.DoesNotExist:
                 return Response({'error': 'Ingredient not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class FastingSessionViewSet(viewsets.ModelViewSet):
+    """ViewSet for fasting sessions"""
+    serializer_class = FastingSessionSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return FastingSession.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get active fasting session"""
+        active_session = FastingSession.objects.filter(
+            user=request.user,
+            is_active=True
+        ).first()
+        
+        if active_session:
+            serializer = self.get_serializer(active_session)
+            return Response(serializer.data)
+        return Response({'message': 'No active fasting session'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'])
+    def end(self, request, pk=None):
+        """End an active fasting session"""
+        from django.utils import timezone
+        session = self.get_object()
+        
+        if not session.is_active:
+            return Response({'error': 'Session is already ended'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        session.end_time = timezone.now()
+        session.is_active = False
+        session.save()
+        
+        serializer = self.get_serializer(session)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def start(self, request):
+        """Start a new fasting session"""
+        from django.utils import timezone
+        
+        # End any existing active sessions
+        FastingSession.objects.filter(
+            user=request.user,
+            is_active=True
+        ).update(is_active=False, end_time=timezone.now())
+        
+        # Create new session
+        session = FastingSession.objects.create(
+            user=request.user,
+            start_time=timezone.now(),
+            is_active=True,
+            notes=request.data.get('notes', '')
+        )
+        
+        serializer = self.get_serializer(session)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class FastingSettingsViewSet(viewsets.ModelViewSet):
+    """ViewSet for fasting settings"""
+    serializer_class = FastingSettingsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return FastingSettings.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get', 'put', 'patch'])
+    def my_settings(self, request):
+        """Get or update current user's fasting settings"""
+        settings_obj, created = FastingSettings.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'widget_enabled': True,
+                'protocol': '16:8',
+                'custom_fasting_hours': 16,
+                'eating_window_start': '12:00',
+                'notifications_enabled': True,
+                'notify_fast_start': True,
+                'notify_fast_end': True,
+            }
+        )
+        
+        if request.method == 'GET':
+            serializer = self.get_serializer(settings_obj)
+            return Response(serializer.data)
+        
+        elif request.method in ['PUT', 'PATCH']:
+            serializer = self.get_serializer(settings_obj, data=request.data, partial=request.method == 'PATCH')
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == 'DELETE':
             # Delete ingredient
